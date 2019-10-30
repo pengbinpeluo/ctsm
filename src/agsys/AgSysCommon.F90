@@ -22,7 +22,9 @@ module AgSysCommon
   type, public :: agsys_common_type
      private
 
-     ! Public data members
+     ! ------------------------------------------------------------------------
+     ! Public data members, time-constant
+     ! ------------------------------------------------------------------------
 
      ! AgSys's crop type: one of the crop_type_* constants defined above; note that these
      ! may differ from the constants in pftconMod
@@ -32,10 +34,19 @@ module AgSysCommon
      ! values 1-3 may always be maize cultivars, and cultivar values 4-5 always soybean
      ! cultivars, etc. - so you can index cultivar-specific parameters just with
      ! cultivar_patch, without needing to also reference crop_type_patch. Each crop type
-     ! has at least one cultivar, and may have many.
+     ! has at least one cultivar, and may have many. This is currently constant in time,
+     ! but eventually may be dynamic.
      integer, pointer, public :: cultivar_patch(:)
 
+     ! ------------------------------------------------------------------------
+     ! Public data members, time-varying
+     ! ------------------------------------------------------------------------
+
+     ! Current stage, as an integer that counts up in order from 1 to the maximum number
+     ! of stages for the given crop type.
      integer, pointer, public :: current_stage_patch(:)
+
+     ! Whether the crop has emerged yet this season
      logical, pointer, public :: emerged_patch(:)
 
    contains
