@@ -1,0 +1,3 @@
+This directory contains modules that are specific to the CTSM
+implementation of AgSys. Furthermore, CTSM should only interact with
+AgSys via the modules here.

@@ -10,8 +10,9 @@ module AgSys
 #include "shr_assert.h"
   use clm_time_manager, only : is_beg_curr_day
   use decompMod, only : bounds_type
-  use AgSysCommon, only : agsys_common_type
+  use AgSysGeneral, only : agsys_general_type
   use AgSysParams, only : agsys_params_type
+  use AgSysParamReader, only : ReadParams
   use AgSysClimate, only : agsys_climate_type
   use AgSysPhenology, only : agsys_phenology_type
   !
@@ -22,7 +23,7 @@ module AgSys
 
   type, public :: agsys_type
      private
-     type(agsys_common_type)    :: agsys_common_inst
+     type(agsys_general_type)    :: agsys_general_inst
      type(agsys_params_type)    :: agsys_params_inst
      type(agsys_climate_type)   :: agsys_climate_inst
      type(agsys_phenology_type) :: agsys_phenology_inst
@@ -86,8 +87,8 @@ contains
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
-    call this%agsys_common_inst%Init(bounds)
-    call this%agsys_params_inst%Init()
+    call this%agsys_general_inst%Init(bounds)
+    call ReadParams(this%agsys_params_inst)
     call this%agsys_climate_inst%Init(bounds)
     call this%agsys_phenology_inst%Init(bounds)
 

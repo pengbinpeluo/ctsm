@@ -1,0 +1,7 @@
+The modules here provide wrappers to constants, variables and low-level
+routines in CTSM that are used by the AgSys science code in order to
+make it operate consistently with the rest of CTSM. If AgSys were
+plugged in to a different land model, the code in this directory would
+need to be replaced by alternatives that provided the same interface but
+referenced constants, variables and routines that are available in the
+given host model.
