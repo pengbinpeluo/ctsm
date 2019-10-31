@@ -1,0 +1,7 @@
+This directory contains the science implementation of AgSys. Modules
+here should not depend on CTSM data structures or routines, so that this
+directory could be copied in its entirety into another land model. The
+only dependencies should be on (1) other modules in this directory, and
+(2) modules in the ctsm_wrappers subdirectory. The latter would be
+replaced by a different set of wrappers if AgSys were imported into a
+different land model.

@@ -1,8 +1,8 @@
-module AgSysCommon
+module AgSysGeneral
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Class containing data used by multiple other AgSys classes
+  ! Class containing general data used by multiple other AgSys classes
   !
   ! !USES:
 #include "shr_assert.h"
@@ -15,19 +15,15 @@ module AgSysCommon
 
   ! !PUBLIC TYPES:
 
-  integer, parameter, public :: crop_type_maize = 1
-  integer, parameter, public :: crop_type_soybean = 2
-  integer, parameter, public :: crop_type_maxval = 2
-
-  type, public :: agsys_common_type
+  type, public :: agsys_general_type
      private
 
      ! ------------------------------------------------------------------------
      ! Public data members, time-constant
      ! ------------------------------------------------------------------------
 
-     ! AgSys's crop type: one of the crop_type_* constants defined above; note that these
-     ! may differ from the constants in pftconMod
+     ! AgSys's crop type: one of the crop_type_* constants defined in AgSysConstants; note
+     ! that these may differ from the constants in pftconMod
      integer, pointer, public :: crop_type_patch(:)
 
      ! Cultivar type. A given value implies a given crop type; for example, cultivar
@@ -52,7 +48,7 @@ module AgSysCommon
    contains
      procedure, public :: Init
      procedure, private :: InitAllocate
-  end type agsys_common_type
+  end type agsys_general_type
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -63,10 +59,10 @@ contains
   subroutine Init(this, bounds)
     !
     ! !DESCRIPTION:
-    ! Initialize this agsys_common_type instance
+    ! Initialize this agsys_general_type instance
     !
     ! !ARGUMENTS:
-    class(agsys_common_type), intent(inout) :: this
+    class(agsys_general_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -81,10 +77,10 @@ contains
   subroutine InitAllocate(this, bounds)
     !
     ! !DESCRIPTION:
-    ! Allocate components of this agsys_common_type instance
+    ! Allocate components of this agsys_general_type instance
     !
     ! !ARGUMENTS:
-    class(agsys_common_type), intent(inout) :: this
+    class(agsys_general_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -105,4 +101,4 @@ contains
     end associate
   end subroutine InitAllocate
 
-end module AgSysCommon
+end module AgSysGeneral
