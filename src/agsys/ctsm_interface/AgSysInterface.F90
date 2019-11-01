@@ -10,12 +10,12 @@ module AgSys
 #include "shr_assert.h"
   use clm_time_manager, only : is_beg_curr_day
   use decompMod, only : bounds_type
-  use AgSysGeneral, only : agsys_general_type
+  use AgSysGeneralType, only : agsys_general_type
   use AgSysParams, only : agsys_params_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams, ReadPhases
-  use AgSysClimate, only : agsys_climate_type
-  use AgSysPhenology, only : agsys_phenology_type
+  use AgSysClimateInterface, only : agsys_climate_type
+  use AgSysPhenologyInterface, only : agsys_phenology_type
   !
   implicit none
   private

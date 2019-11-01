@@ -1,4 +1,4 @@
-module AgSysClimate
+module AgSysClimateInterface
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -119,4 +119,4 @@ contains
 
   end subroutine InitAllocate
 
-end module AgSysClimate
+end module AgSysClimateInterface

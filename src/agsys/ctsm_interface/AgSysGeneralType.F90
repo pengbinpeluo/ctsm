@@ -1,4 +1,4 @@
-module AgSysGeneral
+module AgSysGeneralType
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -101,4 +101,4 @@ contains
     end associate
   end subroutine InitAllocate
 
-end module AgSysGeneral
+end module AgSysGeneralType
