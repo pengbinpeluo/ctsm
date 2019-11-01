@@ -92,7 +92,7 @@ contains
     call this%agsys_general_inst%Init(bounds)
     call ReadParams(this%agsys_params_inst)
     call ReadPhases(this%agsys_phases_inst)
-    call this%agsys_climate_inst%Init(bounds)
+    call this%agsys_climate_inst%Init(bounds, this%agsys_phases_inst)
     call this%agsys_phenology_inst%Init(bounds)
 
   end subroutine Init

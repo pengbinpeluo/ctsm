@@ -9,6 +9,7 @@ module AgSysClimate
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use decompMod        , only : bounds_type
+  use AgSysPhases      , only : agsys_phases_type
   !
   implicit none
   private
@@ -19,8 +20,16 @@ module AgSysClimate
      private
 
      ! Public data members
-     real(r8), pointer, public :: accumulated_thermal_time_patch(:)        ! accumulated thermal time (deg-days)
-     real(r8), pointer, public :: accumulated_emerged_thermal_time_patch(:) ! accumulated thermal time since emergence (deg-days)
+     real(r8), pointer, public :: accumulated_thermal_time_patch(:)          ! accumulated thermal time (deg-days)
+
+     ! TODO(wjs, 2019-11-01) We may not need all of these - i.e., it maybe unnecessary to
+     ! have both an emerged_thermal_time and thermal time for each phase (since the former
+     ! can be calculated from the latter if needed). Also, we may not actually need the
+     ! full generality of having thermal time for each phase: it may be sufficient, for
+     ! example, to store the thermal time just for the previous phase. (If we can avoid
+     ! supporting this full generality, that could be good to avoid restart file bloat.)
+     real(r8), pointer, public :: accumulated_emerged_thermal_time_patch(:)  ! accumulated thermal time since emergence (deg-days)
+     real(r8), pointer, public :: accumulated_thermal_time_phases_patch(:,:) ! accumulated thermal time for each phase (deg-days) [phase, patch]
    contains
      procedure, public :: AgSysClimateTimeStep
 
@@ -61,7 +70,7 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  subroutine Init(this, bounds)
+  subroutine Init(this, bounds, agsys_phases_inst)
     !
     ! !DESCRIPTION:
     ! Initialize this agsys_climate_type insntance
@@ -69,17 +78,18 @@ contains
     ! !ARGUMENTS:
     class(agsys_climate_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(agsys_phases_type), intent(in) :: agsys_phases_inst
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
-    call this%InitAllocate(bounds)
+    call this%InitAllocate(bounds, agsys_phases_inst)
   end subroutine Init
 
   !-----------------------------------------------------------------------
-  subroutine InitAllocate(this, bounds)
+  subroutine InitAllocate(this, bounds, agsys_phases_inst)
     !
     ! !DESCRIPTION:
     ! Allocate components of this agsys_climate_type instance
@@ -87,6 +97,7 @@ contains
     ! !ARGUMENTS:
     class(agsys_climate_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(agsys_phases_type), intent(in) :: agsys_phases_inst
     !
     ! !LOCAL VARIABLES:
 
@@ -100,6 +111,9 @@ contains
 
     allocate(this%accumulated_thermal_time_patch(begp:endp))         ; this%accumulated_thermal_time_patch(:) = nan
     allocate(this%accumulated_emerged_thermal_time_patch(begp:endp)) ; this%accumulated_emerged_thermal_time_patch(:) = nan
+
+    allocate(this%accumulated_thermal_time_phases_patch(1:agsys_phases_inst%max_phases, begp:endp))
+    this%accumulated_thermal_time_phases_patch(:,:) = nan
 
     end associate
 
