@@ -1,4 +1,4 @@
-module AgSysPhenology
+module AgSysPhenologyInterface
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -105,4 +105,4 @@ contains
 
   end subroutine InitAllocate
 
-end module AgSysPhenology
+end module AgSysPhenologyInterface
