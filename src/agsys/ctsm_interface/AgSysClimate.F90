@@ -73,7 +73,7 @@ contains
   subroutine Init(this, bounds, agsys_phases_inst)
     !
     ! !DESCRIPTION:
-    ! Initialize this agsys_climate_type insntance
+    ! Initialize this agsys_climate_type instance
     !
     ! !ARGUMENTS:
     class(agsys_climate_type), intent(inout) :: this
