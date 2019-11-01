@@ -12,7 +12,8 @@ module AgSys
   use decompMod, only : bounds_type
   use AgSysGeneral, only : agsys_general_type
   use AgSysParams, only : agsys_params_type
-  use AgSysParamReader, only : ReadParams
+  use AgSysPhases, only : agsys_phases_type
+  use AgSysParamReader, only : ReadParams, ReadPhases
   use AgSysClimate, only : agsys_climate_type
   use AgSysPhenology, only : agsys_phenology_type
   !
@@ -23,8 +24,9 @@ module AgSys
 
   type, public :: agsys_type
      private
-     type(agsys_general_type)    :: agsys_general_inst
+     type(agsys_general_type)   :: agsys_general_inst
      type(agsys_params_type)    :: agsys_params_inst
+     type(agsys_phases_type)    :: agsys_phases_inst
      type(agsys_climate_type)   :: agsys_climate_inst
      type(agsys_phenology_type) :: agsys_phenology_inst
 
@@ -89,7 +91,8 @@ contains
 
     call this%agsys_general_inst%Init(bounds)
     call ReadParams(this%agsys_params_inst)
-    call this%agsys_climate_inst%Init(bounds)
+    call ReadPhases(this%agsys_phases_inst)
+    call this%agsys_climate_inst%Init(bounds, this%agsys_phases_inst)
     call this%agsys_phenology_inst%Init(bounds)
 
   end subroutine Init
