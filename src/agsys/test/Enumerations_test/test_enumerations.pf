@@ -1,0 +1,78 @@
+module test_enumerations
+
+  ! Tests of various enumerations in AgSys
+  !
+  ! There are various enumerations defined in the AgSys code. The tests in this module
+  ! ensure that the enumerations don't have missing or duplicate values.
+
+
+  use pfunit_mod
+  use AgSysConstants
+  use AgSysPhases
+  use shr_kind_mod , only : r8 => shr_kind_r8
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestEnumerations
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestEnumerations
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+contains
+
+  subroutine setUp(this)
+    class(TestEnumerations), intent(inout) :: this
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestEnumerations), intent(inout) :: this
+  end subroutine tearDown
+
+  subroutine add_one(x)
+    ! Add one to x
+    integer, intent(inout) :: x
+    x = x + 1
+  end subroutine add_one
+
+  @Test
+  subroutine test_crop_types(this)
+    ! Make sure that each crop type appears once and only once
+    class(TestEnumerations), intent(inout) :: this
+    integer :: counts(crop_type_maxval)
+    integer :: expected_counts(crop_type_maxval)
+
+    counts(:) = 0
+    expected_counts(:) = 1
+
+    call add_one(counts(crop_type_maize))
+    call add_one(counts(crop_type_soybean))
+
+    @assertEqual(expected_counts, counts)
+  end subroutine test_crop_types
+
+  @Test
+  subroutine test_phase_types(this)
+    ! Make sure that each phase type appears once and only once
+    class(TestEnumerations), intent(inout) :: this
+    integer :: counts(phase_type_minval:phase_type_maxval)
+    integer :: expected_counts(phase_type_minval:phase_type_maxval)
+
+    counts(:) = 0
+    expected_counts(:) = 1
+
+    call add_one(counts(phase_type_unused))
+    call add_one(counts(phase_type_generic))
+    call add_one(counts(phase_type_germinating))
+    call add_one(counts(phase_type_emerging))
+    call add_one(counts(phase_type_node_number))
+    call add_one(counts(phase_type_leaf_appearance))
+    call add_one(counts(phase_type_end))
+
+    @assertEqual(expected_counts, counts)
+  end subroutine test_phase_types
+
+end module test_enumerations
