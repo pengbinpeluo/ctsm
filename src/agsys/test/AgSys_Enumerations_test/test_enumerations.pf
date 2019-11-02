@@ -5,7 +5,6 @@ module test_enumerations
   ! There are various enumerations defined in the AgSys code. The tests in this module
   ! ensure that the enumerations don't have missing or duplicate values.
 
-
   use pfunit_mod
   use AgSysConstants
   use AgSysPhases

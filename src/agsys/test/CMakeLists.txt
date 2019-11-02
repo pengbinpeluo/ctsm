@@ -1,1 +1,1 @@
-add_subdirectory(Enumerations_test)
+add_subdirectory(AgSys_Enumerations_test)
