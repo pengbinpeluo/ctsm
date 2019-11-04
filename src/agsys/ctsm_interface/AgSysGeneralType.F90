@@ -39,8 +39,9 @@ module AgSysGeneralType
      ! ------------------------------------------------------------------------
 
      ! Current stage, as an integer that counts up in order from 1 to the maximum number
-     ! of stages for the given crop type.
-     integer, pointer, public :: current_stage_patch(:)
+     ! of stages for the given crop type. This can have a fractional value, indicating
+     ! how far we are from one stage to the next.
+     real(r8), pointer, public :: current_stage_patch(:)
 
      ! Whether the crop has emerged yet this season
      logical, pointer, public :: emerged_patch(:)
@@ -95,7 +96,7 @@ contains
 
     allocate(this%crop_type_patch(begp:endp)); this%crop_type_patch(:) = 0
     allocate(this%cultivar_patch(begp:endp)); this%cultivar_patch(:) = 0
-    allocate(this%current_stage_patch(begp:endp)); this%current_stage_patch(:) = 0
+    allocate(this%current_stage_patch(begp:endp)); this%current_stage_patch(:) = nan
     allocate(this%emerged_patch(begp:endp)); this%emerged_patch(:) = .false.
 
     end associate

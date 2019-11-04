@@ -1,0 +1,8 @@
+Typically, we put test directories in the directory containing the files
+being tested. Here we have the test directory at a higher level. The
+main motivation for this is that we don't want to put unit tests (which
+use CTSM-specific infrastructure) in the science subdirectory (since the
+science subdirectory is supposed to be independent of CTSM), so it makes
+sense to put the tests of code in the science subdirectory at this
+higher level. Then, for symmetry, we also put the tests of code in other
+subdirectories at this higher level, too.
