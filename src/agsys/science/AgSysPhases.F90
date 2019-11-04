@@ -13,6 +13,7 @@ module AgSysPhases
 
   ! !PUBLIC DATA:
 
+  integer, parameter, public :: phase_type_minval = -1
   integer, parameter, public :: phase_type_unused = -1
   integer, parameter, public :: phase_type_generic = 0
   integer, parameter, public :: phase_type_germinating = 1
