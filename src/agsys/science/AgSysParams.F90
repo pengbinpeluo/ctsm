@@ -14,6 +14,13 @@ module AgSysParams
   implicit none
   private
 
+  type, public :: response_curve_type
+     private
+     integer,  public :: cpnum  !!critical point number 
+     real(r8), allocatable, public :: x(:)  !!critical point on x-axis
+     real(r8), allocatable, public :: y(:)  !!critical point on y-axis
+  end type response_curve_type
+
   ! !PUBLIC TYPES:
   type, public :: agsys_params_type
      private
