@@ -18,10 +18,12 @@ module AgSysPhases
   integer, parameter, public :: phase_type_generic = 0
   integer, parameter, public :: phase_type_germinating = 1
   integer, parameter, public :: phase_type_emerging = 2
-  integer, parameter, public :: phase_type_node_number = 3
-  integer, parameter, public :: phase_type_leaf_appearance = 4
-  integer, parameter, public :: phase_type_end = 5
-  integer, parameter, public :: phase_type_maxval = 5
+  integer, parameter, public :: phase_type_photosensitive = 3
+  integer, parameter, public :: phase_type_inductive = 4
+  integer, parameter, public :: phase_type_node_number = 5
+  integer, parameter, public :: phase_type_leaf_appearance = 6
+  integer, parameter, public :: phase_type_end = 7
+  integer, parameter, public :: phase_type_maxval = 7
 
   integer, parameter, public :: max_phase_name_len = 64  ! maximum number of characters in names of phases / stages
 
