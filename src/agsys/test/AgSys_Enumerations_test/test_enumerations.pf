@@ -49,6 +49,8 @@ contains
 
     call add_one(counts(crop_type_maize))
     call add_one(counts(crop_type_soybean))
+    call add_one(counts(crop_type_wheat))
+    call add_one(counts(crop_type_sorghum))
 
     @assertEqual(expected_counts, counts)
   end subroutine test_crop_types
@@ -67,6 +69,8 @@ contains
     call add_one(counts(phase_type_generic))
     call add_one(counts(phase_type_germinating))
     call add_one(counts(phase_type_emerging))
+    call add_one(counts(phase_type_photosensitive))
+    call add_one(counts(phase_type_inductive))
     call add_one(counts(phase_type_node_number))
     call add_one(counts(phase_type_leaf_appearance))
     call add_one(counts(phase_type_end))
