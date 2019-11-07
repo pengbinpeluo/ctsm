@@ -9,7 +9,7 @@ module AgSysClimateInterface
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use decompMod        , only : bounds_type
-  use AgSysPhases      , only : agsys_phases_type
+  use AgSysRuntimeConstants, only : agsys_max_phases
   !
   implicit none
   private
@@ -70,7 +70,7 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  subroutine Init(this, bounds, agsys_phases_inst)
+  subroutine Init(this, bounds)
     !
     ! !DESCRIPTION:
     ! Initialize this agsys_climate_type instance
@@ -78,18 +78,17 @@ contains
     ! !ARGUMENTS:
     class(agsys_climate_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
-    type(agsys_phases_type), intent(in) :: agsys_phases_inst
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
-    call this%InitAllocate(bounds, agsys_phases_inst)
+    call this%InitAllocate(bounds)
   end subroutine Init
 
   !-----------------------------------------------------------------------
-  subroutine InitAllocate(this, bounds, agsys_phases_inst)
+  subroutine InitAllocate(this, bounds)
     !
     ! !DESCRIPTION:
     ! Allocate components of this agsys_climate_type instance
@@ -97,7 +96,6 @@ contains
     ! !ARGUMENTS:
     class(agsys_climate_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
-    type(agsys_phases_type), intent(in) :: agsys_phases_inst
     !
     ! !LOCAL VARIABLES:
 
@@ -112,7 +110,7 @@ contains
     allocate(this%accumulated_thermal_time_patch(begp:endp))         ; this%accumulated_thermal_time_patch(:) = nan
     allocate(this%accumulated_emerged_thermal_time_patch(begp:endp)) ; this%accumulated_emerged_thermal_time_patch(:) = nan
 
-    allocate(this%accumulated_thermal_time_phases_patch(1:agsys_phases_inst%max_phases, begp:endp))
+    allocate(this%accumulated_thermal_time_phases_patch(1:agsys_max_phases, begp:endp))
     this%accumulated_thermal_time_phases_patch(:,:) = nan
 
     end associate

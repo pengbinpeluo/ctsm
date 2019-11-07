@@ -26,12 +26,10 @@ module AgSysGeneralType
      ! that these may differ from the constants in pftconMod
      integer, pointer, public :: crop_type_patch(:)
 
-     ! Cultivar type. A given value implies a given crop type; for example, cultivar
-     ! values 1-3 may always be maize cultivars, and cultivar values 4-5 always soybean
-     ! cultivars, etc. - so you can index cultivar-specific parameters just with
-     ! cultivar_patch, without needing to also reference crop_type_patch. Each crop type
-     ! has at least one cultivar, and may have many. This is currently constant in time,
-     ! but eventually may be dynamic.
+     ! Cultivar type. For a given crop type, the cultivar type numbering starts at 1. So
+     ! maize may have cultivars 1-3, soybean 1-2, wheat 1-4, etc. Each crop type has at
+     ! least one cultivar, and may have many. This is currently constant in time, but
+     ! eventually may be dynamic.
      integer, pointer, public :: cultivar_patch(:)
 
      ! ------------------------------------------------------------------------

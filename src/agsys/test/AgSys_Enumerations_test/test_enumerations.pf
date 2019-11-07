@@ -39,7 +39,7 @@ contains
 
   @Test
   subroutine test_crop_types(this)
-    ! Make sure that each crop type appears once and only once
+    ! Make sure that each crop type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
     integer :: counts(crop_type_maxval)
     integer :: expected_counts(crop_type_maxval)
@@ -49,13 +49,15 @@ contains
 
     call add_one(counts(crop_type_maize))
     call add_one(counts(crop_type_soybean))
+    call add_one(counts(crop_type_wheat))
+    call add_one(counts(crop_type_sorghum))
 
     @assertEqual(expected_counts, counts)
   end subroutine test_crop_types
 
   @Test
   subroutine test_phase_types(this)
-    ! Make sure that each phase type appears once and only once
+    ! Make sure that each phase type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
     integer :: counts(phase_type_minval:phase_type_maxval)
     integer :: expected_counts(phase_type_minval:phase_type_maxval)
@@ -67,11 +69,29 @@ contains
     call add_one(counts(phase_type_generic))
     call add_one(counts(phase_type_germinating))
     call add_one(counts(phase_type_emerging))
+    call add_one(counts(phase_type_photosensitive))
+    call add_one(counts(phase_type_inductive))
     call add_one(counts(phase_type_node_number))
     call add_one(counts(phase_type_leaf_appearance))
     call add_one(counts(phase_type_end))
 
     @assertEqual(expected_counts, counts)
   end subroutine test_phase_types
+
+  @Test
+  subroutine test_composite_phase_types(this)
+    ! Make sure that each composite phase type integer value appears once and only once
+    class(TestEnumerations), intent(inout) :: this
+    integer :: counts(composite_phase_type_maxval)
+    integer :: expected_counts(composite_phase_type_maxval)
+
+    counts(:) = 0
+    expected_counts(:) = 1
+
+    call add_one(counts(composite_phase_type_vernalization))
+    call add_one(counts(composite_phase_type_emerge_to_end_of_juvenile))
+
+    @assertEqual(expected_counts, counts)
+  end subroutine test_composite_phase_types
 
 end module test_enumerations
