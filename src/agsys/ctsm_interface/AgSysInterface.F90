@@ -10,10 +10,12 @@ module AgSys
 #include "shr_assert.h"
   use clm_time_manager, only : is_beg_curr_day
   use decompMod, only : bounds_type
+  use AgSysConstants, only : crop_type_maxval
   use AgSysGeneralType, only : agsys_general_type
-  use AgSysParams, only : agsys_params_type
+  use AgSysParams, only : agsys_crop_params_type, agsys_crop_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams, ReadPhases
+  use AgSysRuntimeConstants, only : InitRuntimeConstants
   use AgSysClimateInterface, only : agsys_climate_type
   use AgSysPhenologyInterface, only : agsys_phenology_type
   !
@@ -24,16 +26,37 @@ module AgSys
 
   type, public :: agsys_type
      private
+     ! Parameters that vary by crop type
+     type(agsys_crop_params_type) :: crop_params(crop_type_maxval)
+
+     ! Parameters that vary by cultivar; these are first indexed by crop type, then
+     ! indexed by the specific cultivar for that crop. For example:
+     !
+     ! do p = ...  <- loop over patches (typically a filter loop)
+     !    crop_type = agsys_general_inst%crop_type_patch(p)
+     !    cultivar  = agsys_general_inst%cultivar_patch(p)
+     !    call SomeAgsysRoutine( &
+     !         crop_params     = agsys_inst%crop_params(crop_type), &
+     !         cultivar_params = agsys_inst%crop_cultivar_params(crop_type)%cultivar_params(cultivar), &
+     !         ...)
+     ! end do
+     !
+     ! (Note that this way, the science code - such as SomeAgsysRoutine - doesn't need to
+     ! index the params by crop type or cultivar: a given call for a single patch only
+     ! has access to the parameters for the appropriate crop type and cultivar for that
+     ! patch.)
+     type(agsys_crop_cultivar_params_type) :: crop_cultivar_params(crop_type_maxval)
+
+     ! Information about the phases for each crop type
+     type(agsys_phases_type) :: crop_phases(crop_type_maxval)
+
      type(agsys_general_type)   :: agsys_general_inst
-     type(agsys_params_type)    :: agsys_params_inst
-     type(agsys_phases_type)    :: agsys_phases_inst
      type(agsys_climate_type)   :: agsys_climate_inst
      type(agsys_phenology_type) :: agsys_phenology_inst
 
    contains
      procedure, public :: AgSysDriver
      procedure, public :: Init
-
   end type agsys_type
 
   character(len=*), parameter, private :: sourcefile = &
@@ -89,10 +112,11 @@ contains
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
+    call ReadParams(this%crop_params, this%crop_cultivar_params)
+    call ReadPhases(this%crop_phases)
+    call InitRuntimeConstants(this%crop_phases)
     call this%agsys_general_inst%Init(bounds)
-    call ReadParams(this%agsys_params_inst)
-    call ReadPhases(this%agsys_phases_inst)
-    call this%agsys_climate_inst%Init(bounds, this%agsys_phases_inst)
+    call this%agsys_climate_inst%Init(bounds)
     call this%agsys_phenology_inst%Init(bounds)
 
   end subroutine Init

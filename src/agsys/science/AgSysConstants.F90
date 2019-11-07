@@ -16,7 +16,7 @@ module AgSysConstants
   integer, parameter, public :: crop_type_maize = 1
   integer, parameter, public :: crop_type_soybean = 2
   integer, parameter, public :: crop_type_wheat = 3
-  integer, parameter, public :: crop_type_soyghum = 4
+  integer, parameter, public :: crop_type_sorghum = 4
   integer, parameter, public :: crop_type_maxval = 4
 
 end module AgSysConstants
