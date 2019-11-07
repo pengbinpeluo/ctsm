@@ -39,7 +39,7 @@ contains
 
   @Test
   subroutine test_crop_types(this)
-    ! Make sure that each crop type appears once and only once
+    ! Make sure that each crop type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
     integer :: counts(crop_type_maxval)
     integer :: expected_counts(crop_type_maxval)
@@ -57,7 +57,7 @@ contains
 
   @Test
   subroutine test_phase_types(this)
-    ! Make sure that each phase type appears once and only once
+    ! Make sure that each phase type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
     integer :: counts(phase_type_minval:phase_type_maxval)
     integer :: expected_counts(phase_type_minval:phase_type_maxval)
@@ -77,5 +77,21 @@ contains
 
     @assertEqual(expected_counts, counts)
   end subroutine test_phase_types
+
+  @Test
+  subroutine test_composite_phase_types(this)
+    ! Make sure that each composite phase type integer value appears once and only once
+    class(TestEnumerations), intent(inout) :: this
+    integer :: counts(composite_phase_type_maxval)
+    integer :: expected_counts(composite_phase_type_maxval)
+
+    counts(:) = 0
+    expected_counts(:) = 1
+
+    call add_one(counts(composite_phase_type_vernalization))
+    call add_one(counts(composite_phase_type_emerge_to_end_of_juvenile))
+
+    @assertEqual(expected_counts, counts)
+  end subroutine test_composite_phase_types
 
 end module test_enumerations
