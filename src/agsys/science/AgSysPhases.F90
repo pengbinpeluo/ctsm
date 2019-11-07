@@ -48,4 +48,20 @@ module AgSysPhases
      integer                          , allocatable, public :: phase_type(:,:) ! [stage, crop_type]; each value is one of the above phase_type_* constants
   end type agsys_phases_type
 
+  type, public :: composite_phase_type
+     private
+     character(len=max_phase_name_len), allocatable, public :: child_phase(:)
+     integer,                           allocatable, public :: child_phase_id(:) 
+  end type composite_phase_type
+
+  type, public :: agsys_composite_phase_type
+     private
+     !public data members
+     integer, public :: max_composite_phases !maximum number of composite phases used by any crop (arrays are dimensioned to be this large)
+     integer, allocatable, public :: num_composite_phases_for_crop(:) ![crop_type] number of composite phases used by each crop
+     
+     character(len=max_phase_name_len), allocatable, public :: composite_phase_name(:, :)     ![composite_phase, crop_type]
+     type(composite_phase_type), allocatable, public :: composite_phase_children(:, :) ![composite_phase, crop_type]
+  end type agsys_composite_phase_type
+
 end module AgSysPhases
