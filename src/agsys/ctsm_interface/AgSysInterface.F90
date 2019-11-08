@@ -11,20 +11,18 @@ module AgSys
   use clm_time_manager, only : is_beg_curr_day
   use decompMod, only : bounds_type
   use AgSysConstants, only : crop_type_maxval
-  use AgSysGeneralType, only : agsys_general_type
+  use AgSysType, only : agsys_type
   use AgSysParams, only : agsys_crop_params_type, agsys_crop_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams, ReadPhases
   use AgSysRuntimeConstants, only : InitRuntimeConstants
-  use AgSysClimateInterface, only : agsys_climate_type
-  use AgSysPhenologyInterface, only : agsys_phenology_type
   !
   implicit none
   private
 
   ! !PUBLIC TYPES:
 
-  type, public :: agsys_type
+  type, public :: agsys_interface_type
      private
      ! Parameters that vary by crop type
      type(agsys_crop_params_type) :: crop_params(crop_type_maxval)
@@ -50,14 +48,12 @@ module AgSys
      ! Information about the phases for each crop type
      type(agsys_phases_type) :: crop_phases(crop_type_maxval)
 
-     type(agsys_general_type)   :: agsys_general_inst
-     type(agsys_climate_type)   :: agsys_climate_inst
-     type(agsys_phenology_type) :: agsys_phenology_inst
+     type(agsys_type) :: agsys_inst
 
    contains
      procedure, public :: AgSysDriver
      procedure, public :: Init
-  end type agsys_type
+  end type agsys_interface_type
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -78,17 +74,17 @@ contains
     ! less frequently (e.g., daily updates of phenology).
     !
     ! !ARGUMENTS:
-    class(agsys_type), intent(inout) :: this
+    class(agsys_interface_type), intent(inout) :: this
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'AgSysDriver'
     !-----------------------------------------------------------------------
 
-    call this%agsys_climate_inst%AgSysClimateTimeStep()
+    ! TODO(wjs, 2019-11-08) Do climate stuff
 
     if (is_beg_curr_day()) then
-       call this%agsys_phenology_inst%AgSysPhenologyTimeStep()
+       ! TODO(wjs, 2019-11-08) Do phenology stuff
     end if
 
   end subroutine AgSysDriver
@@ -104,7 +100,7 @@ contains
     ! Initialize variables needed by the AgSys model
     !
     ! !ARGUMENTS:
-    class(agsys_type), intent(inout) :: this
+    class(agsys_interface_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -115,9 +111,7 @@ contains
     call ReadParams(this%crop_params, this%crop_cultivar_params)
     call ReadPhases(this%crop_phases)
     call InitRuntimeConstants(this%crop_phases)
-    call this%agsys_general_inst%Init(bounds)
-    call this%agsys_climate_inst%Init(bounds)
-    call this%agsys_phenology_inst%Init(bounds)
+    call this%agsys_inst%Init(bounds)
 
   end subroutine Init
 
