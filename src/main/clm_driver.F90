@@ -9,7 +9,7 @@ module clm_driver
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use clm_varctl             , only : wrtdia, iulog, use_fates
+  use clm_varctl             , only : wrtdia, iulog, use_fates, use_crop_agsys
   use clm_varctl             , only : use_cn, use_lch4, use_noio, use_c13, use_c14
   use clm_varctl             , only : use_crop, irrigate, ndep_from_cpl
   use clm_time_manager       , only : get_nstep, is_beg_curr_day
@@ -970,6 +970,14 @@ contains
                soilbiogeochem_nitrogenflux_inst, soilbiogeochem_nitrogenstate_inst)
           call t_stopf('EcosysDynPostDrainage')
 
+       end if
+
+       if (use_crop_agsys) then
+          call t_startf('agsys')
+          call agsys_interface_inst%AgSysDriver( &
+               filter(nc)%num_pcropp, filter(nc)%pcropp, &
+               patch, grc, temperature_inst)
+          call t_stopf('agsys')
        end if
 
        if ( use_fates  .and. is_beg_curr_day() ) then ! run fates at the start of each day
