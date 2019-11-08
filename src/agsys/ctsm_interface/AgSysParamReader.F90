@@ -10,7 +10,7 @@ module AgSysParamReader
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use AgSysParams      , only : agsys_crop_params_type, agsys_crop_cultivar_params_type
   use AgSysPhases      , only : agsys_phases_type
-  use AgSysConstants   , only : crop_type_maxval
+  use AgSysConstants   , only : crop_type_maxval, crop_type_maize
   !
   implicit none
   private
@@ -41,6 +41,17 @@ contains
 
     SHR_ASSERT_FL((size(crop_params) == crop_type_maxval), sourcefile, __LINE__)
     SHR_ASSERT_FL((size(crop_cultivar_params) == crop_type_maxval), sourcefile, __LINE__)
+
+    crop_params(crop_type_maize)%shoot_lag = 0  ! TODO(wjs, 2019-11-08) fix this
+
+    allocate(crop_cultivar_params(crop_type_maize)%cultivar_params(1))
+
+    associate(cultivar_params => crop_cultivar_params(crop_type_maize)%cultivar_params(1))
+
+    ! can access params like this:
+    ! cultivar_params%target_tt_from_photoperiod_end_of_juvenile
+
+    end associate
 
   end subroutine ReadParams
 

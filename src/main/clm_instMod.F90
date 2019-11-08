@@ -77,6 +77,7 @@ module clm_instMod
   use ColumnType                      , only : col                
   use PatchType                       , only : patch                
   use CLMFatesInterfaceMod            , only : hlm_fates_interface_type
+  use AgSysInterface                  , only : agsys_interface_type
   use SnowCoverFractionBaseMod        , only : snow_cover_fraction_base_type
   use SnowCoverFractionFactoryMod     , only : CreateAndInitSnowCoverFraction
   use SoilWaterRetentionCurveMod      , only : soil_water_retention_curve_type
@@ -156,6 +157,9 @@ module clm_instMod
 
   ! FATES
   type(hlm_fates_interface_type), public  :: clm_fates
+
+  ! AgSys
+  type(agsys_interface_type), public :: agsys_interface_inst
 
   !
   public :: clm_instInit       ! Initialize

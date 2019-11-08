@@ -48,7 +48,7 @@ module AgSysParams
      private
 
      ! Public data members
-     type(agsys_cultivar_params_type), allocatable :: cultivar_params(:)
+     type(agsys_cultivar_params_type), allocatable, public :: cultivar_params(:)
   end type agsys_crop_cultivar_params_type
 
 end module AgSysParams
