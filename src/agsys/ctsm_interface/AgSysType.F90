@@ -10,6 +10,8 @@ module AgSysType
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use decompMod        , only : bounds_type
   use clm_varpar       , only : nlevsoi
+  use clm_varcon       , only : spval
+  use histFileMod      , only : hist_addfld1d
   use AgSysRuntimeConstants, only : agsys_max_phases
   !
   implicit none
@@ -40,7 +42,7 @@ module AgSysType
 
      ! Current stage, as an integer that counts up in order from 1 to the maximum number
      ! of stages for the given crop type. This can have a fractional value, indicating
-     ! how far we are from one stage to the next.
+     ! how far we are from one stage to the next. Before sowing, this is 0.
      real(r8), pointer, public :: current_stage_patch(:)
 
      ! Whether the crop has emerged yet this season
@@ -69,6 +71,7 @@ module AgSysType
    contains
      procedure, public :: Init
      procedure, private :: InitAllocate
+     procedure, private :: InitHistory
   end type agsys_type
 
   character(len=*), parameter, private :: sourcefile = &
@@ -92,6 +95,7 @@ contains
     !-----------------------------------------------------------------------
 
     call this%InitAllocate(bounds)
+    call this%InitHistory(bounds)
   end subroutine Init
 
   !-----------------------------------------------------------------------
@@ -140,5 +144,35 @@ contains
 
     end associate
   end subroutine InitAllocate
+
+  !-----------------------------------------------------------------------
+  subroutine InitHistory(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize history fields for this agsys instance
+    !
+    ! !ARGUMENTS:
+    class(agsys_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'InitHistory'
+    !-----------------------------------------------------------------------
+
+    associate( &
+         begp => bounds%begp, &
+         endp => bounds%endp  &
+         )
+
+    this%current_stage_patch(begp:endp) = spval
+    call hist_addfld1d(fname='AGSYS_CURRENT_STAGE', units='-', &
+         avgflag='I', long_name='Current phenological stage number (at end of history period)', &
+         ptr_patch=this%current_stage_patch)
+
+    end associate
+
+  end subroutine InitHistory
+
 
 end module AgSysType
