@@ -93,7 +93,7 @@ contains
     integer :: crop_type  ! AgSys's crop type for this patch
     integer :: cultivar   ! AgSys's cultivar type for this patch
     real(r8) :: sw_avail_ratio
-    real(r8) :: fasw
+    real(r8) :: pesw_seedlayer
 
     character(len=*), parameter :: subname = 'AgSysDriver'
     !-----------------------------------------------------------------------
@@ -122,7 +122,7 @@ contains
 
                   ! Outputs
                   sw_avail_ratio = sw_avail_ratio, &
-                  fasw = fasw)
+                  pesw_seedlayer = pesw_seedlayer)
 
              call DoTimeStep_Phenology_Placeholder( &
                   ! Inputs, time-constant
@@ -137,7 +137,7 @@ contains
                   tair_min       = temperature_inst%t_ref2m_min_patch(p), &
                   tc             = temperature_inst%t_veg24_patch(p), &
                   sw_avail_ratio = sw_avail_ratio, &
-                  fasw           = fasw, &
+                  pesw_seedlayer = pesw_seedlayer, &
 
                   ! Outputs
                   days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &

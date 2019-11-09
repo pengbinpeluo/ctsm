@@ -15,7 +15,7 @@ module AgSysPlaceholder
 contains
 
   subroutine DoTimeStep_Phenology_Placeholder(croptype, phases, crop_params, cultivar_params, &
-       photoperiod, tair_max, tair_min, tc, sw_avail_ratio, fasw, &
+       photoperiod, tair_max, tair_min, tc, sw_avail_ratio, pesw_seedlayer, &
        days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
        days_after_phase, tt_after_phase, cumvd)
     ! Inputs, time-constant
@@ -30,7 +30,7 @@ contains
     real(r8), intent(in) :: tair_min  ! daily minimum [K] (exists)
     real(r8), intent(in) :: tc        ! daily mean canopy temperature [K] (exists: t_veg24_patch)
     real(r8), intent(in) :: sw_avail_ratio ! soil water available ratio; this will be calculated earlier by a different AgSys routine (which needs daily average h2osoi_liq in each column, and time-constant soil properties)
-    real(r8), intent(in) :: fasw ! see comment for sw_avail_ratio
+    real(r8), intent(in) :: pesw_seedlayer ! see comment for sw_avail_ratio
 
     ! Outputs
     integer, intent(inout) :: days_after_sowing
@@ -44,11 +44,11 @@ contains
 
   subroutine AgsysAbioticStress_Placeholder(h2osoi_liq_24hr, &
        ! And some other inputs (soil parameters, etc.)
-       sw_avail_ratio, fasw)
+       sw_avail_ratio, pesw_seedlayer)
     real(r8), intent(in) :: h2osoi_liq_24hr(:)  ! 1 .. num_soil_layers
     ! And some other inputs (soil parameters, etc.)
     real(r8), intent(out) :: sw_avail_ratio
-    real(r8), intent(out) :: fasw
+    real(r8), intent(out) :: pesw_seedlayer
   end subroutine AgsysAbioticStress_Placeholder
 
 end module AgSysPlaceholder
