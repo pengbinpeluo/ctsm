@@ -17,7 +17,7 @@ module AgSysInterface
   use TemperatureType, only : temperature_type
   use AgSysConstants, only : crop_type_maxval, crop_type_not_handled
   use AgSysType, only : agsys_type
-  use AgSysParams, only : agsys_crop_params_type, agsys_crop_cultivar_params_type
+  use AgSysParams, only : agsys_crop_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams, ReadPhases
   use AgSysRuntimeConstants, only : InitRuntimeConstants
@@ -30,9 +30,6 @@ module AgSysInterface
 
   type, public :: agsys_interface_type
      private
-     ! Parameters that vary by crop type
-     type(agsys_crop_params_type) :: crop_params(crop_type_maxval)
-
      ! Parameters that vary by cultivar; these are first indexed by crop type, then
      ! indexed by the specific cultivar for that crop. For example:
      !
@@ -40,7 +37,6 @@ module AgSysInterface
      !    crop_type = agsys_general_inst%crop_type_patch(p)
      !    cultivar  = agsys_general_inst%cultivar_patch(p)
      !    call SomeAgsysRoutine( &
-     !         crop_params     = agsys_inst%crop_params(crop_type), &
      !         cultivar_params = agsys_inst%crop_cultivar_params(crop_type)%cultivar_params(cultivar), &
      !         ...)
      ! end do
@@ -128,7 +124,6 @@ contains
                   ! Inputs, time-constant
                   croptype        = crop_type, &
                   phases          = this%crop_phases(crop_type), &
-                  crop_params     = this%crop_params(crop_type), &
                   cultivar_params = this%crop_cultivar_params(crop_type)%cultivar_params(cultivar), &
 
                   ! Inputs, time-varying
@@ -172,7 +167,7 @@ contains
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
-    call ReadParams(this%crop_params, this%crop_cultivar_params)
+    call ReadParams(this%crop_cultivar_params)
     call ReadPhases(this%crop_phases)
     call InitRuntimeConstants(this%crop_phases)
     call this%agsys_inst%Init(bounds)
