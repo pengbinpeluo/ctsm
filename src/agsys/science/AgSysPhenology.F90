@@ -9,7 +9,7 @@ module AgSysPhenology
                                  phase_type_photosensitive, phase_type_inductive, &
                                  phase_type_leaf_appearance, phase_type_node_number
   use AgSysPhases,        only : composite_phase_type_vernalization, composite_phase_type_emerge_to_end_of_juvenile
-  use AgSysParams,        only : response_curve_type, agsys_crop_params_type, agsys_cultivar_params_type
+  use AgSysParams,        only : response_curve_type, agsys_cultivar_params_type
   use AgSysRoot,          only : getSwDefPheno, getNFactPheno, getPFactPheno
   use AgSysUtils,         only : interpolation, bound, divide, reals_are_equal
   use AgSysExcepUtils,    only : iulog, endrun 
@@ -19,7 +19,7 @@ contains
   !---------------------------------------------------------------
   !Some subroutines
   !
-  subroutine DoTimeStep_Phenology(croptype, phases, crop_params, cultivar_params, &
+  subroutine DoTimeStep_Phenology(croptype, phases, cultivar_params, &
                                   photoperiod, tair_max, tair_min, tc, &
                                   sw_avail_ratio, pesw_seedlayer, &
                                   days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
@@ -31,7 +31,6 @@ contains
     !!INPUTS: time constant parameters
     integer,                          intent(in) :: croptype
     type(agsys_phases_type),          intent(in) :: phases
-    type(agsys_crop_params_type),     intent(in) :: crop_params
     type(agsys_cultivar_params_type), intent(in) :: cultivar_params
 
     !!INPUTS: time varying forcing variables from hosting land model
@@ -93,23 +92,23 @@ contains
     eme2ej_cphase        = phases%composite_phases(eme2ej_index)
                                        
     if (any(vernalization_cphase%child_phase_id==floor(current_stage))) then
-      call veralization(croptype, tair_max, tair_min, tc, crop_params%response_curve_vd, cumvd)
+      call veralization(croptype, tair_max, tair_min, tc, cultivar_params%response_curve_vd, cumvd)
     end if
     if ((croptype==crop_type_wheat) .and. (any(eme2ej_cphase%child_phase_id==floor(current_stage)))) then
-      photop_eff=wheat_photop_effect(crop_params%p_photop_sens, photoperiod)
+      photop_eff=wheat_photop_effect(cultivar_params%p_photop_sens, photoperiod)
       !!maximum vernalisation requirement is 50 days
-      vern_eff=wheat_vernaliz_effect(crop_params%p_vern_sens, cumvd, 50.0_r8)
+      vern_eff=wheat_vernaliz_effect(cultivar_params%p_vern_sens, cumvd, 50.0_r8)
     else
       photop_eff=1._r8
       vern_eff=1._r8
     end if
 
     !!!!
-    TT=DailyTT(tair_max, tair_min, crop_params%response_curve_TT)
+    TT=DailyTT(tair_max, tair_min, cultivar_params%response_curve_TT)
     select case (phases%phase_type(current_stage_index))
       case(phase_type_generic)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, crop_params%rc_sw_avail_phenol)
-        call DoTimeStep_GenericPhase(MaxDaysFromSowingToEndofPhase = crop_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
+        call DoTimeStep_GenericPhase(MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
                                      das = days_after_sowing, & 
                                      TT = TT, &
                                      SWDefPheno = SwDefPheno, &
@@ -119,20 +118,20 @@ contains
                                      phase_devel = phase_devel, &
                                      stress_phenol = stress_phenol)
       case(phase_type_germinating)
-        call DoTimeStep_GerminatingPhase(MaxDaysFromSowingToEndofPhase = crop_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        call DoTimeStep_GerminatingPhase(MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
                                          das = days_after_sowing, &
                                          TT = TT, &
-                                         pesw_germ = crop_params%p_pesw_germ, &
+                                         pesw_germ = cultivar_params%p_pesw_germ, &
                                          pesw_seedlayer = pesw_seedlayer, &
                                          dlt_tt_phenol = dlt_tt_phenol, &
                                          phase_devel = phase_devel)
       case(phase_type_emerging)
         call DoTimeStep_EmergingPhase(croptype = croptype, &
-                                      MaxDaysFromSowingToEndofPhase = crop_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+                                      MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
                                       das = days_after_sowing, &
                                       TT = TT, &
                                       sw_avail_ratio = sw_avail_ratio, &
-                                      rc_sw_emerg_rate = crop_params%rc_sw_emerg_rate, &
+                                      rc_sw_emerg_rate = cultivar_params%rc_sw_emerg_rate, &
                                       vern_eff = vern_eff, &
                                       photop_eff = photop_eff, &
                                       phase_TargetTT = cultivar_params%phase_TargetTT(current_stage_index), &
@@ -141,27 +140,27 @@ contains
                                       phase_devel = phase_devel, &
                                       stress_phenol = stress_phenol)
       case(phase_type_photosensitive)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, crop_params%rc_sw_avail_phenol)
-        call DoTimeStep_PhotoPhase(MaxDaysFromSowingToEndofPhase= crop_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
+        call DoTimeStep_PhotoPhase(MaxDaysFromSowingToEndofPhase= cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
                                    das = days_after_sowing, &
                                    TT = TT, &
                                    SwDefPheno = SwDefPheno, &
                                    photoperiod = photoperiod, &
-                                   rc_photoperiod_TargetTT = crop_params%rc_photoperiod_TargetTT, &
+                                   rc_photoperiod_TargetTT = cultivar_params%rc_photoperiod_TargetTT, &
                                    phase_TT = tt_in_phase(current_stage_index), &
                                    dlt_tt_phenol = dlt_tt_phenol, &
                                    phase_devel = phase_devel, &
                                    stress_phenol = stress_phenol)
       case(phase_type_inductive)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, crop_params%rc_sw_avail_phenol)
+        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
         NFactPheno=getNFactPheno()
         PFactPheno=getPFactPheno()
         call DoTimeStep_InductivePhase(croptype = croptype, &
-                                       MaxDaysFromSowingToEndofPhase = crop_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+                                       MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
                                        das = days_after_sowing, &
                                        TT = TT, &
                                        cumvd = cumvd, &
-                                       rc_cumvd_TargetTT = crop_params%rc_cumvd_TargetTT, &
+                                       rc_cumvd_TargetTT = cultivar_params%rc_cumvd_TargetTT, &
                                        SwDefPheno = SwDefPheno, &
                                        NFactPheno = NFactPheno, &
                                        PFactPheno = PFactPheno, &
