@@ -13,6 +13,11 @@ module AgSysPhases
 
   ! !PUBLIC DATA:
 
+  ! Phase types
+  !
+  ! NOTE(wjs, 2019-11-12) When changing these constants or adding new phase types, also
+  ! change the corresponding unit test in
+  ! src/agsys/test/AgSys_Enumerations_test/test_enumerations.pf.
   integer, parameter, public :: phase_type_minval = -1
   integer, parameter, public :: phase_type_unused = -1
   integer, parameter, public :: phase_type_generic = 0
@@ -25,6 +30,11 @@ module AgSysPhases
   integer, parameter, public :: phase_type_end = 7
   integer, parameter, public :: phase_type_maxval = 7
 
+  ! Composite phase types
+  !
+  ! NOTE(wjs, 2019-11-12) When changing these constants or adding new composite phase
+  ! types, also change the corresponding unit test in
+  ! src/agsys/test/AgSys_Enumerations_test/test_enumerations.pf.
   integer, parameter, public :: composite_phase_type_vernalization = 1
   integer, parameter, public :: composite_phase_type_emerge_to_end_of_juvenile = 2
   integer, parameter, public :: composite_phase_type_maxval = 2
