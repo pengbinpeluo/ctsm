@@ -92,7 +92,7 @@ contains
     eme2ej_cphase        = phases%composite_phases(eme2ej_index)
                                        
     if (any(vernalization_cphase%child_phase_id==floor(current_stage))) then
-      call veralization(croptype, tmax, tmin, tc, cultivar_params%rc_tair_vd, cumvd)
+      call vernalization(croptype, tmax, tmin, tc, cultivar_params%rc_tair_vd, cumvd)
     end if
     if ((croptype==crop_type_wheat) .and. (any(eme2ej_cphase%child_phase_id==floor(current_stage)))) then
       photop_eff=wheat_photop_effect(cultivar_params%p_photop_sens, photoperiod)
@@ -399,7 +399,7 @@ contains
   subroutine AgSysRunNodeNumberPhase()
   end subroutine AgSysRunNodeNumberPhase
 
-  subroutine vernalisation(croptype, tmax, tmin, tc, response_curve, cumvd)
+  subroutine vernalization(croptype, tmax, tmin, tc, response_curve, cumvd)
     integer, intent(in) :: croptype
     real(r8), intent(in) :: tmax
     real(r8), intent(in) :: tmin
@@ -415,7 +415,7 @@ contains
       dlt_cumvd=vernaliz_days(tmax, tmin, response_curve)
     end if
     cumvd=cumvd + dlt_cumvd
-  end subroutine vernalisation 
+  end subroutine vernalization 
 
   !-----------------------------------------------
   !Some functions related with phenology
