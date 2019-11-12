@@ -153,7 +153,7 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  subroutine Init(this, bounds)
+  subroutine Init(this, bounds, patch)
     !
     ! !DESCRIPTION:
     ! Initialize variables needed by the AgSys model
@@ -161,6 +161,7 @@ contains
     ! !ARGUMENTS:
     class(agsys_interface_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(patch_type), intent(in) :: patch
     !
     ! !LOCAL VARIABLES:
 
@@ -170,7 +171,7 @@ contains
     call ReadParams(this%crop_cultivar_params)
     call ReadPhases(this%crop_phases)
     call InitRuntimeConstants(this%crop_phases)
-    call this%agsys_inst%Init(bounds)
+    call this%agsys_inst%Init(bounds, patch)
 
   end subroutine Init
 

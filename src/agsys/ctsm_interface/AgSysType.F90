@@ -11,8 +11,11 @@ module AgSysType
   use decompMod        , only : bounds_type
   use clm_varpar       , only : nlevsoi
   use clm_varcon       , only : spval
+  use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
   use histFileMod      , only : hist_addfld1d
+  use PatchType        , only : patch_type
   use AgSysRuntimeConstants, only : agsys_max_phases
+  use AgSysConstants, only : crop_type_not_handled, crop_type_maize
   !
   implicit none
   private
@@ -72,6 +75,7 @@ module AgSysType
      procedure, public :: Init
      procedure, private :: InitAllocate
      procedure, private :: InitHistory
+     procedure, private :: InitCold
   end type agsys_type
 
   character(len=*), parameter, private :: sourcefile = &
@@ -80,7 +84,7 @@ module AgSysType
 contains
 
   !-----------------------------------------------------------------------
-  subroutine Init(this, bounds)
+  subroutine Init(this, bounds, patch)
     !
     ! !DESCRIPTION:
     ! Initialize this agsys_type instance
@@ -88,6 +92,7 @@ contains
     ! !ARGUMENTS:
     class(agsys_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(patch_type), intent(in) :: patch
     !
     ! !LOCAL VARIABLES:
 
@@ -96,6 +101,7 @@ contains
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
+    call this%InitCold(bounds, patch)
   end subroutine Init
 
   !-----------------------------------------------------------------------
@@ -174,5 +180,49 @@ contains
 
   end subroutine InitHistory
 
+  !-----------------------------------------------------------------------
+  subroutine InitCold(this, bounds, patch)
+    !
+    ! !DESCRIPTION:
+    ! Do cold start initialization for this agsys instance
+    !
+    ! !ARGUMENTS:
+    class(agsys_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    type(patch_type), intent(in) :: patch
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p
+
+    character(len=*), parameter :: subname = 'InitCold'
+    !-----------------------------------------------------------------------
+
+    associate( &
+         begp => bounds%begp, &
+         endp => bounds%endp  &
+         )
+
+    do p = begp, endp
+       associate( &
+            ptype => patch%itype(p) &
+            )
+
+       if ( ptype == ntmp_corn .or. ptype == nirrig_tmp_corn .or. &
+            ptype == ntrp_corn .or. ptype == nirrig_trp_corn) then
+          this%crop_type_patch(p) = crop_type_maize
+          ! TODO(wjs, 2019-11-12) Handle more crop types here
+       else
+          this%crop_type_patch(p) = crop_type_not_handled
+       end if
+
+       ! TODO(wjs, 2019-11-12) Fix this
+       this%cultivar_patch(p) = 1
+
+       end associate
+    end do
+
+    end associate
+
+  end subroutine InitCold
 
 end module AgSysType
