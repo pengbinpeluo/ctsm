@@ -9,7 +9,10 @@ module AgSysParamReader
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use AgSysParams      , only : agsys_crop_cultivar_params_type
-  use AgSysPhases      , only : agsys_phases_type
+  use AgSysPhases      , only : agsys_phases_type, &
+                                max_str_len_for_phase_def, &
+                                phase_type_generic, phase_type_germinating, phase_type_emerging, &
+                                phase_type_leaf_appearance
   use AgSysConstants   , only : crop_type_maxval, crop_type_maize
   !
   implicit none
@@ -74,18 +77,19 @@ contains
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_FL((size(crop_phases) == crop_type_maxval), sourcefile, __LINE__)
+    
+    crop_phases(crop_type_maize)%num_phases=11
     crop_phases(crop_type_maize)%stage_name=[character(len=max_str_len_for_phase_def) :: &
                                               'sowing', 'germination', 'emergence', 'end_of_juvenile', &
                                               'floral_initiation', 'flag_leaf', 'flowering', &
                                               'start_grain_fill', 'end_grain_fill', 'maturity', 'harvest_ripe', 'end_crop']
-    crop_pahses(crop_type_maize)%phase_name=[character(len=max_str_len_for_phase_def) :: &
+    crop_phases(crop_type_maize)%phase_name=[character(len=max_str_len_for_phase_def) :: &
                                               'germinating', 'emerging', 'juvenile', &
                                               'photosen_sitive', 'leaf_apperance', 'flag_leaf_to_flowering', &
                                               'flowering_to_grain_filling', 'grain_filling', 'maturing', 'maturity_to_harvest_ripe', 'ready_for_harvesting']
-    crop_phases(crop_type_maize)%phase_type=[character(len=max_str_len_for_phase_def) :: &
-                                              'germinating', 'emerging', 'generic', &
-                                              'generic', 'leafapperance', 'generic', &
-                                              'generic', 'generic', 'generic', 'generic', 'generic']
+    crop_phases(crop_type_maize)%phase_type=[phase_type_germinating, phase_type_emerging, phase_type_generic, &
+                                             phase_type_generic, phase_type_generic, phase_type_generic, &
+                                             phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic]
 
   end subroutine ReadPhases
 
