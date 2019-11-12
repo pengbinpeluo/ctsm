@@ -33,17 +33,18 @@ module AgSysParams
      private
 
      ! Public data members
-     integer, allocatable,      public :: MaxDaysFromSowingToEndofPhase(:)
-     real(r8),                  public :: shoot_lag
-     real(r8),                  public :: shoot_rate
-     real(r8), allocatable,     public :: phase_TargetTT(:)  !!target thermal time to finish a phase
+     integer, allocatable,      public :: max_days_from_sowing_to_end_of_phase(:)
+     real(r8),                  public :: p_sowing_depth
+     real(r8),                  public :: p_shoot_lag
+     real(r8),                  public :: p_shoot_rate
+     real(r8), allocatable,     public :: phase_target_tt(:)  !!target thermal time to finish a phase
      type(response_curve_type), public :: target_tt_from_photoperiod_end_of_juvenile
-     type(response_curve_type), public :: response_curve_tt
-     type(response_curve_type), public :: response_curve_vd
+     type(response_curve_type), public :: rc_tair_tt
+     type(response_curve_type), public :: rc_tair_vd
      type(response_curve_type), public :: rc_sw_avail_phenol
      type(response_curve_type), public :: rc_sw_emerg_rate
-     type(response_curve_type), public :: rc_photoperiod_TargetTT
-     type(response_curve_type), public :: rc_cumvd_TargetTT
+     type(response_curve_type), public :: rc_photoperiod_target_tt
+     type(response_curve_type), public :: rc_cumvd_target_tt
      real(r8),                  public :: p_photop_sens
      real(r8),                  public :: p_vern_sens
      real(r8),                  public :: p_pesw_germ

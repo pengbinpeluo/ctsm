@@ -48,12 +48,14 @@ contains
     associate(cultivar_params => crop_cultivar_params(crop_type_maize)%cultivar_params(1))
       ! can access params like this:
       ! cultivar_params%shoot_lag
-      cultivar_params%shoot_lag = 15._r8  ! degree-days
-      cultivar_params%shoot_rate= 0.6_r8  ! degree-days per mm depth
+      cultivar_params%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
+                                             ! into a separate structure later [TODO (2019-11-12, pb)]
+      cultivar_params%p_shoot_lag    = 15._r8  ! [degree-days]
+      cultivar_params%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]
 
-      cultivar_params%response_curve_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
-      cultivar_params%response_curve_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
-      cultivar_params%response_curve_tt%num_pts=5
+      cultivar_params%rc_tair_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
+      cultivar_params%rc_tair_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
+      cultivar_params%rc_tair_tt%num_pts=5
 
       cultivar_params%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
       cultivar_params%rc_sw_avail_phenol%y=[0._r8, 1._r8]

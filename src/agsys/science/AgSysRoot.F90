@@ -25,21 +25,21 @@ contains
     real(r8) :: sw_avail_max
   end function get_sw_avail_max
 
-  function getSwDefPheno(sw_avail_ratio, rc_sw_avail_phenol) result(SwDefPheno)
+  function get_swdef_phenol(sw_avail_ratio, rc_sw_avail_phenol) result(swdef_phenol)
     real(r8), intent(in) :: sw_avail_ratio
     type(response_curve_type), intent(in) :: rc_sw_avail_phenol
-    real(r8) :: SwDefPheno
+    real(r8) :: swdef_phenol
 
-    SwDefPheno=interpolation(sw_avail_ratio, rc_sw_avail_phenol%x, rc_sw_avail_phenol%y, rc_sw_avail_phenol%num_pts)
-  end function getSwDefPheno
+    swdef_phenol=interpolation(sw_avail_ratio, rc_sw_avail_phenol%x, rc_sw_avail_phenol%y, rc_sw_avail_phenol%num_pts)
+  end function get_swdef_phenol
 
-  function getNFactPheno() result(NFactPheno)
-    real(r8) :: NFactPheno
-    NFactPheno=1._r8  !TODO(pb, 2019-11-07) a dummy value here and will come back later
-  end function getNFactPheno
+  function get_nFact_phenol() result(nfact_phenol)
+    real(r8) :: nfact_phenol
+    nfact_phenol=1._r8  !TODO(pb, 2019-11-07) a dummy value here and will come back later
+  end function get_nfact_phenol
 
-  function getPFactPheno() result(PFactPheno)
-    real(r8) :: PFactPheno
-    PFactPheno=1._r8  !TODO(pb, 2019-11-07) a dummy value here and will come back later
-  end function getPFactPheno
+  function get_pfact_phenol() result(pfact_phenol)
+    real(r8) :: pfact_phenol
+    pfact_phenol=1._r8  !TODO(pb, 2019-11-07) a dummy value here and will come back later
+  end function get_pfact_phenol
 end module AgSysRoot

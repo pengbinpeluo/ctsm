@@ -10,7 +10,7 @@ module AgSysPhenology
                                  phase_type_leaf_appearance, phase_type_node_number
   use AgSysPhases,        only : composite_phase_type_vernalization, composite_phase_type_emerge_to_end_of_juvenile
   use AgSysParams,        only : response_curve_type, agsys_cultivar_params_type
-  use AgSysRoot,          only : getSwDefPheno, getNFactPheno, getPFactPheno
+  use AgSysRoot,          only : get_swdef_phenol, get_nfact_phenol, get_pfact_phenol
   use AgSysUtils,         only : interpolation, bound, divide, reals_are_equal
   use AgSysExcepUtils,    only : iulog, endrun 
 
@@ -19,8 +19,8 @@ contains
   !---------------------------------------------------------------
   !Some subroutines
   !
-  subroutine DoTimeStep_Phenology(croptype, phases, cultivar_params, &
-                                  photoperiod, tair_max, tair_min, tc, &
+  subroutine AgSysRunPhenology(croptype, phases, cultivar_params, &
+                                  photoperiod, tmax, tmin, tc, &
                                   sw_avail_ratio, pesw_seedlayer, &
                                   days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
                                   days_after_phase, tt_after_phase, cumvd)
@@ -35,8 +35,8 @@ contains
 
     !!INPUTS: time varying forcing variables from hosting land model
     real(r8), intent(in) :: photoperiod     !!photoperiod=day length [h]
-    real(r8), intent(in) :: tair_max        !!daily maximum air temperature [K]
-    real(r8), intent(in) :: tair_min        !!daily minimum air temperature [K]
+    real(r8), intent(in) :: tmax        !!daily maximum air temperature [K]
+    real(r8), intent(in) :: tmin        !!daily minimum air temperature [K]
     real(r8), intent(in) :: tc              !!daily mean canopy temperature [K]
     real(r8), intent(in) :: sw_avail_ratio  !!soil water available ratio, can be calculated from soil water profile [-]
     real(r8), intent(in) :: pesw_seedlayer        
@@ -59,12 +59,12 @@ contains
     real(r8) :: dlt_tt_phenol
     real(r8) :: stress_phenol
     real(r8) :: phase_devel
-    real(r8) :: TT
+    real(r8) :: tt
     real(r8) :: dltStage
     real(r8) :: new_stage
-    real(r8) :: SwDefPheno
-    real(r8) :: NFactPheno
-    real(r8) :: PFactPheno
+    real(r8) :: swdef_phenol
+    real(r8) :: nfact_phenol
+    real(r8) :: pfact_phenol
     real(r8) :: photop_eff
     real(r8) :: vern_eff
 
@@ -80,7 +80,7 @@ contains
     !!!!do some value initialization 
     dltStage = 0._r8
     dlt_tt_phenol  = 0._r8
-    TT=0._r8
+    tt=0._r8
     stress_phenol = 1._r8
 
     !!!!
@@ -92,7 +92,7 @@ contains
     eme2ej_cphase        = phases%composite_phases(eme2ej_index)
                                        
     if (any(vernalization_cphase%child_phase_id==floor(current_stage))) then
-      call veralization(croptype, tair_max, tair_min, tc, cultivar_params%response_curve_vd, cumvd)
+      call veralization(croptype, tmax, tmin, tc, cultivar_params%rc_tair_vd, cumvd)
     end if
     if ((croptype==crop_type_wheat) .and. (any(eme2ej_cphase%child_phase_id==floor(current_stage)))) then
       photop_eff=wheat_photop_effect(cultivar_params%p_photop_sens, photoperiod)
@@ -104,77 +104,77 @@ contains
     end if
 
     !!!!
-    TT=DailyTT(tair_max, tair_min, cultivar_params%response_curve_TT)
+    tt=get_daily_tt(tmax, tmin, cultivar_params%rc_tair_tt)
     select case (phases%phase_type(current_stage_index))
       case(phase_type_generic)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
-        call DoTimeStep_GenericPhase(MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        swdef_phenol=get_swdef_phenol(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
+        call AgSysRunGenericPhase(max_days_from_sowing_to_end_of_phase = cultivar_params%max_days_from_sowing_to_end_of_phase(current_stage_index), &
                                      das = days_after_sowing, & 
-                                     TT = TT, &
-                                     SWDefPheno = SwDefPheno, &
-                                     phase_TargetTT = cultivar_params%phase_TargetTT(current_stage_index), &
-                                     phase_TT = tt_in_phase(current_stage_index), &
+                                     tt = tt, &
+                                     swdef_phenol = swdef_phenol, &
+                                     phase_target_tt = cultivar_params%phase_target_tt(current_stage_index), &
+                                     phase_tt = tt_in_phase(current_stage_index), &
                                      dlt_tt_phenol = dlt_tt_phenol, &
                                      phase_devel = phase_devel, &
                                      stress_phenol = stress_phenol)
       case(phase_type_germinating)
-        call DoTimeStep_GerminatingPhase(MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        call AgSysRunGerminatingPhase(max_days_from_sowing_to_end_of_phase = cultivar_params%max_days_from_sowing_to_end_of_phase(current_stage_index), &
                                          das = days_after_sowing, &
-                                         TT = TT, &
+                                         tt = tt, &
                                          pesw_germ = cultivar_params%p_pesw_germ, &
                                          pesw_seedlayer = pesw_seedlayer, &
                                          dlt_tt_phenol = dlt_tt_phenol, &
                                          phase_devel = phase_devel)
       case(phase_type_emerging)
-        call DoTimeStep_EmergingPhase(croptype = croptype, &
-                                      MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        call AgSysRunEmergingPhase(croptype = croptype, &
+                                      max_days_from_sowing_to_end_of_phase = cultivar_params%max_days_from_sowing_to_end_of_phase(current_stage_index), &
                                       das = days_after_sowing, &
-                                      TT = TT, &
+                                      tt = tt, &
                                       sw_avail_ratio = sw_avail_ratio, &
                                       rc_sw_emerg_rate = cultivar_params%rc_sw_emerg_rate, &
                                       vern_eff = vern_eff, &
                                       photop_eff = photop_eff, &
-                                      phase_TargetTT = cultivar_params%phase_TargetTT(current_stage_index), &
-                                      phase_TT = tt_in_phase(current_stage_index), &
+                                      phase_target_tt = cultivar_params%phase_target_tt(current_stage_index), &
+                                      phase_tt = tt_in_phase(current_stage_index), &
                                       dlt_tt_phenol = dlt_tt_phenol, &
                                       phase_devel = phase_devel, &
                                       stress_phenol = stress_phenol)
       case(phase_type_photosensitive)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
-        call DoTimeStep_PhotoPhase(MaxDaysFromSowingToEndofPhase= cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        swdef_phenol=get_swdef_phenol(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
+        call AgSysRunPhotoPhase(max_days_from_sowing_to_end_of_phase= cultivar_params%max_days_from_sowing_to_end_of_phase(current_stage_index), &
                                    das = days_after_sowing, &
-                                   TT = TT, &
-                                   SwDefPheno = SwDefPheno, &
+                                   tt = tt, &
+                                   swdef_phenol = swdef_phenol, &
                                    photoperiod = photoperiod, &
-                                   rc_photoperiod_TargetTT = cultivar_params%rc_photoperiod_TargetTT, &
-                                   phase_TT = tt_in_phase(current_stage_index), &
+                                   rc_photoperiod_target_tt = cultivar_params%rc_photoperiod_target_tt, &
+                                   phase_tt = tt_in_phase(current_stage_index), &
                                    dlt_tt_phenol = dlt_tt_phenol, &
                                    phase_devel = phase_devel, &
                                    stress_phenol = stress_phenol)
       case(phase_type_inductive)
-        SwDefPheno=getSwDefPheno(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
-        NFactPheno=getNFactPheno()
-        PFactPheno=getPFactPheno()
-        call DoTimeStep_InductivePhase(croptype = croptype, &
-                                       MaxDaysFromSowingToEndofPhase = cultivar_params%MaxDaysFromSowingToEndofPhase(current_stage_index), &
+        swdef_phenol=get_swdef_phenol(sw_avail_ratio, cultivar_params%rc_sw_avail_phenol)
+        nfact_phenol=get_nfact_phenol()
+        pfact_phenol=get_pfact_phenol()
+        call AgSysRunInductivePhase(croptype = croptype, &
+                                       max_days_from_sowing_to_end_of_phase = cultivar_params%max_days_from_sowing_to_end_of_phase(current_stage_index), &
                                        das = days_after_sowing, &
-                                       TT = TT, &
+                                       tt = tt, &
                                        cumvd = cumvd, &
-                                       rc_cumvd_TargetTT = cultivar_params%rc_cumvd_TargetTT, &
-                                       SwDefPheno = SwDefPheno, &
-                                       NFactPheno = NFactPheno, &
-                                       PFactPheno = PFactPheno, &
+                                       rc_cumvd_target_tt = cultivar_params%rc_cumvd_target_tt, &
+                                       swdef_phenol = swdef_phenol, &
+                                       nfact_phenol = nfact_phenol, &
+                                       pfact_phenol = pfact_phenol, &
                                        vern_eff   = vern_eff,   &
                                        photop_eff = photop_eff, &
-                                       phase_TargetTT = cultivar_params%phase_TargetTT(current_stage_index), &
-                                       phase_TT = tt_in_phase(current_stage_index), &
+                                       phase_target_tt = cultivar_params%phase_target_tt(current_stage_index), &
+                                       phase_tt = tt_in_phase(current_stage_index), &
                                        dlt_tt_phenol = dlt_tt_phenol, &
                                        phase_devel = phase_devel, &
                                        stress_phenol = stress_phenol)
       case(phase_type_leaf_appearance)
-        call DOTimeStep_LeafAppearancePhase()
+        call AgSysRunLeafAppearancePhase()
       case(phase_type_node_number)
-        call DoTimeStep_NodeNumberPhase() 
+        call AgSysRunNodeNumberPhase() 
     end select
 
     new_stage = current_stage_index + phase_devel
@@ -228,51 +228,51 @@ contains
     end if
 
     days_after_sowing=days_after_sowing+1
-  end subroutine DotimeStep_Phenology
+  end subroutine AgSysRunPhenology
 
-  subroutine Initialize_OnSowing(shoot_lag, shoot_rate, sowing_depth, EmergingPhase_TargetTT)
-    real(r8), intent(in) :: shoot_lag    !!shoot lag parameter [degs day]
-    real(r8), intent(in) :: shoot_rate   !!shoot rate parameter [degs day per m]
-    real(r8), intent(in) :: sowing_depth !!sowing depth of seed [m]
-    real(r8), intent(inout) :: EmergingPhase_TargetTT
+  subroutine initialize_on_sowing(shoot_lag, shoot_rate, sowing_depth, target_tt)
+    real(r8), intent(in) :: shoot_lag    !!shoot lag parameter  [deg-days]
+    real(r8), intent(in) :: shoot_rate   !!shoot rate parameter [deg-days per mm]
+    real(r8), intent(in) :: sowing_depth !!sowing depth of seed [mm]
+    real(r8), intent(inout) :: target_tt !!target thermal time for emerging phase [deg-days]
     
-    EmergingPhase_TargetTT=shoot_lag+sowing_depth*shoot_rate
-  end subroutine
+    target_tt=shoot_lag+sowing_depth*shoot_rate
+  end subroutine initialize_on_sowing
 
-  subroutine DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+  subroutine AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das        !! days after sowing
-    real(r8), intent(in):: TT
-    real(r8), intent(in):: phase_TT
-    real(r8), intent(in):: phase_TargetTT
+    real(r8), intent(in):: tt
+    real(r8), intent(in):: phase_tt
+    real(r8), intent(in):: phase_target_tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
     real(r8), intent(inout) :: stress_phenol
    
-    dlt_tt_phenol = TT * stress_phenol
+    dlt_tt_phenol = tt * stress_phenol
 
-    if (MaxDaysFromSowingToEndofPhase > 0) then
-      if (das >= MaxDaysFromSowingToEndofPhase) then
+    if (max_days_from_sowing_to_end_of_phase > 0) then
+      if (das >= max_days_from_sowing_to_end_of_phase) then
          phase_devel = 1._r8
       else
          phase_devel = 0._r8
       end if
     else
-      phase_devel = bound((phase_TT + dlt_tt_phenol)/phase_TargetTT, 0._r8, 1._r8)
+      phase_devel = bound((phase_tt + dlt_tt_phenol)/phase_target_tt, 0._r8, 1._r8)
     end if
-  end subroutine DoTimeStep_Phase
+  end subroutine AgSysRunPhase
 
-  subroutine DoTimeStep_GerminatingPhase(MaxDaysFromSowingToEndofPhase, das, TT, pesw_germ, pesw_seedlayer, dlt_tt_phenol, phase_devel)
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+  subroutine AgSysRunGerminatingPhase(max_days_from_sowing_to_end_of_phase, das, tt, pesw_germ, pesw_seedlayer, dlt_tt_phenol, phase_devel)
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das         !! days after sowing
     real(r8), intent(in) :: pesw_germ  !! a threshold plant extratable soil water for germination
     real(r8), intent(in) :: pesw_seedlayer  !! plant extratable soil water in the seeding layer
-    real(r8), intent(in) :: TT
+    real(r8), intent(in) :: tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
 
-    if (MaxDaysFromSowingToEndofPhase > 0) then
-      if (das >= MaxDaysFromSowingToEndofPhase) then
+    if (max_days_from_sowing_to_end_of_phase > 0) then
+      if (das >= max_days_from_sowing_to_end_of_phase) then
          phase_devel = 1.999_r8
       else
          phase_devel = 0.999_r8
@@ -286,19 +286,19 @@ contains
           phase_devel = 0.999_r8
        end if
     end if
-    dlt_tt_phenol = TT
-  end subroutine DoTimeStep_GerminatingPhase
+    dlt_tt_phenol = tt
+  end subroutine AgSysRunGerminatingPhase
  
-  subroutine DoTimeStep_EmergingPhase(croptype, MaxDaysFromSowingToEndofPhase, das, TT, &
+  subroutine AgSysRunEmergingPhase(croptype, max_days_from_sowing_to_end_of_phase, das, tt, &
                                       sw_avail_ratio, rc_sw_emerg_rate, vern_eff, photop_eff, &
-                                      phase_TargetTT, phase_TT, &
+                                      phase_target_tt, phase_tt, &
                                       dlt_tt_phenol, phase_devel, stress_phenol)
     integer, intent(in) :: croptype
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das        !! days after sowing
-    real(r8), intent(in) :: TT
-    real(r8), intent(in) :: phase_TT
-    real(r8), intent(in) :: phase_TargetTT
+    real(r8), intent(in) :: tt
+    real(r8), intent(in) :: phase_tt
+    real(r8), intent(in) :: phase_target_tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
     real(r8), intent(inout) :: stress_phenol
@@ -316,93 +316,93 @@ contains
         !!only water stress
         stress_phenol=rel_emerg_rate(sw_avail_ratio, rc_sw_emerg_rate)
     end if
-    call DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
-  end subroutine DoTimeStep_EmergingPhase
+    call AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
+  end subroutine AgSysRunEmergingPhase
 
-  subroutine DoTimeStep_PhotoPhase(MaxDaysFromSowingToEndofPhase, das, TT, &
-                                   SwDefPheno, photoperiod, rc_photoperiod_TargetTT, &
-                                   phase_TT, &
+  subroutine AgSysRunPhotoPhase(max_days_from_sowing_to_end_of_phase, das, tt, &
+                                   swdef_phenol, photoperiod, rc_photoperiod_target_tt, &
+                                   phase_tt, &
                                    dlt_tt_phenol, phase_devel, stress_phenol)
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das        !! days after sowing
-    real(r8), intent(in) :: TT
-    real(r8), intent(in) :: phase_TT
+    real(r8), intent(in) :: tt
+    real(r8), intent(in) :: phase_tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
     real(r8), intent(inout) :: stress_phenol
 
     real(r8), intent(in) :: photoperiod
-    type(response_curve_type), intent(in) :: rc_photoperiod_TargetTT
-    real(r8), intent(in) :: SwDefPheno 
-    real(r8) :: phase_TargetTT
+    type(response_curve_type), intent(in) :: rc_photoperiod_target_tt
+    real(r8), intent(in) :: swdef_phenol 
+    real(r8) :: phase_target_tt
  
-    phase_TargetTT=TargetTT_from_PhotoPeriod(photoperiod, rc_photoperiod_TargetTT)
-    stress_phenol=SwDefPheno
-    call DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
-  end subroutine DoTimeStep_PhotoPhase
+    phase_target_tt=target_tt_from_photoperiod(photoperiod, rc_photoperiod_target_tt)
+    stress_phenol=swdef_phenol
+    call AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
+  end subroutine AgSysRunPhotoPhase
 
-  subroutine DoTimeStep_GenericPhase(MaxDaysFromSowingToEndofPhase, das, TT, &
-                                     SwDefPheno, &
-                                     phase_TargetTT, phase_TT, &
+  subroutine AgSysRunGenericPhase(max_days_from_sowing_to_end_of_phase, das, tt, &
+                                     swdef_phenol, &
+                                     phase_target_tt, phase_tt, &
                                      dlt_tt_phenol, phase_devel, stress_phenol)
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das        !! days after sowing
-    real(r8), intent(in) :: TT
-    real(r8), intent(in) :: phase_TT
-    real(r8), intent(in) :: phase_TargetTT
+    real(r8), intent(in) :: tt
+    real(r8), intent(in) :: phase_tt
+    real(r8), intent(in) :: phase_target_tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
     real(r8), intent(inout) :: stress_phenol
-    real(r8), intent(in) :: SwDefPheno
-    stress_phenol=SwDefPheno
-    call DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
-  end subroutine DoTimeStep_GenericPhase
+    real(r8), intent(in) :: swdef_phenol
+    stress_phenol=swdef_phenol
+    call AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
+  end subroutine AgSysRunGenericPhase
 
-  subroutine DoTimeStep_InductivePhase(croptype, MaxDaysFromSowingToEndofPhase, das, TT, &
-                                       cumvd, rc_cumvd_TargetTT, &
-                                       SwDefPheno, NFactPheno, PFactPheno, vern_eff, photop_eff, &
-                                       phase_TargetTT, phase_TT, &
+  subroutine AgSysRunInductivePhase(croptype, max_days_from_sowing_to_end_of_phase, das, tt, &
+                                       cumvd, rc_cumvd_target_tt, &
+                                       swdef_phenol, nfact_phenol, pfact_phenol, vern_eff, photop_eff, &
+                                       phase_target_tt, phase_tt, &
                                        dlt_tt_phenol, phase_devel, stress_phenol)
     integer, intent(in) :: croptype
-    integer, intent(in) :: MaxDaysFromSowingToEndofPhase
+    integer, intent(in) :: max_days_from_sowing_to_end_of_phase
     integer, intent(in) :: das        !! days after sowing
-    real(r8), intent(in) :: TT
+    real(r8), intent(in) :: tt
     real(r8), intent(in) :: cumvd
-    real(r8), intent(in) :: phase_TT
-    real(r8), intent(in) :: phase_TargetTT
+    real(r8), intent(in) :: phase_tt
+    real(r8), intent(in) :: phase_target_tt
     real(r8), intent(inout) :: dlt_tt_phenol
     real(r8), intent(inout) :: phase_devel
     real(r8), intent(inout) :: stress_phenol
 
-    real(r8), intent(in) :: SwDefPheno
-    real(r8), intent(in) :: NFactPheno
-    real(r8), intent(in) :: PFactPheno
+    real(r8), intent(in) :: swdef_phenol
+    real(r8), intent(in) :: nfact_phenol
+    real(r8), intent(in) :: pfact_phenol
     real(r8), intent(in) :: vern_eff
     real(r8), intent(in) :: photop_eff
-    type(response_curve_type), intent(in) :: rc_cumvd_TargetTT
+    type(response_curve_type), intent(in) :: rc_cumvd_target_tt
 
-    real(r8) :: phase_TargetTT_new
+    real(r8) :: phase_target_tt_new
    
     if (croptype==crop_type_wheat) then
-      stress_phenol=min(SwDefPheno, min(NFactPheno, PFactPheno))* min(vern_eff, photop_eff)
-      call DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
+      stress_phenol=min(swdef_phenol, min(nfact_phenol, pfact_phenol))* min(vern_eff, photop_eff)
+      call AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
     else 
-      stress_phenol=min(SwDefPheno, min(NFactPheno, PFactPheno))
-      phase_TargetTT_new=TargetTT_from_cumvd(cumvd, rc_cumvd_TargetTT)
-      call DoTimeStep_Phase(MaxDaysFromSowingToEndofPhase, das, TT, phase_TargetTT_new, phase_TT, dlt_tt_phenol, phase_devel, stress_phenol)
+      stress_phenol=min(swdef_phenol, min(nfact_phenol, pfact_phenol))
+      phase_target_tt_new=target_tt_from_cumvd(cumvd, rc_cumvd_target_tt)
+      call AgSysRunPhase(max_days_from_sowing_to_end_of_phase, das, tt, phase_target_tt_new, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
     end if
-  end subroutine DotimeStep_InductivePhase
+  end subroutine AgSysRunInductivePhase
 
-  subroutine DoTimeStep_LeafAppearancePhase()
-  end subroutine DoTimeStep_LeafAppearancePhase
+  subroutine AgSysRunLeafAppearancePhase()
+  end subroutine AgSysRunLeafAppearancePhase
 
-  subroutine DoTimeStep_NodeNumberPhase()
-  end subroutine DoTimeStep_NodeNumberPhase
+  subroutine AgSysRunNodeNumberPhase()
+  end subroutine AgSysRunNodeNumberPhase
 
-  subroutine vernalisation(croptype, tair_max, tair_min, tc, response_curve, cumvd)
+  subroutine vernalisation(croptype, tmax, tmin, tc, response_curve, cumvd)
     integer, intent(in) :: croptype
-    real(r8), intent(in) :: tair_max
-    real(r8), intent(in) :: tair_min
+    real(r8), intent(in) :: tmax
+    real(r8), intent(in) :: tmin
     real(r8), intent(in) :: tc
     type(response_curve_type), intent(in) :: response_curve
     real(r8), intent(inout) :: cumvd
@@ -410,9 +410,9 @@ contains
     real(r8) :: dlt_cumvd
      
     if (croptype==crop_type_wheat) then
-      dlt_cumvd=wheat_vernaliz_days(tair_max, tair_min, tc, cumvd)
+      dlt_cumvd=wheat_vernaliz_days(tmax, tmin, tc, cumvd)
     else
-      dlt_cumvd=vernaliz_days(tair_max, tair_min, response_curve)
+      dlt_cumvd=vernaliz_days(tmax, tmin, response_curve)
     end if
     cumvd=cumvd + dlt_cumvd
   end subroutine vernalisation 
@@ -420,42 +420,42 @@ contains
   !-----------------------------------------------
   !Some functions related with phenology
   !-----------------------------------------------
-  function vernaliz_days(tair_max, tair_min, response_curve) result(dlt_cumvd)
-    real(r8), intent(in) :: tair_max
-    real(r8), intent(in) :: tair_min
+  function vernaliz_days(tmax, tmin, response_curve) result(dlt_cumvd)
+    real(r8), intent(in) :: tmax
+    real(r8), intent(in) :: tmin
     type(response_curve_type), intent(in) :: response_curve
     real(r8) :: dlt_cumvd
     integer  :: period, period_num
-    real(r8) :: tMean3Hour
+    real(r8) :: tmean_3hour
 
     dlt_cumvd=0._r8
     period_num=8  !!3-hourly
     do period = 1, period_num
-      tMean3Hour = temp3Hr(tair_max, tair_min, period)
-      dlt_cumvd = dlt_cumvd + interpolation(tMean3Hour, response_curve%x, response_curve%y, response_curve%num_pts)
+      tmean_3hour = temp_3hourly(tmax, tmin, period)
+      dlt_cumvd = dlt_cumvd + interpolation(tmean_3hour, response_curve%x, response_curve%y, response_curve%num_pts)
     end do
     dlt_cumvd=dlt_cumvd/period_num
   end function vernaliz_days
 
-  function wheat_vernaliz_days(tair_max, tair_min, tc, cumvd) result(dlt_cumvd)
-    real(r8), intent(in) :: tair_max
-    real(r8), intent(in) :: tair_min
+  function wheat_vernaliz_days(tmax, tmin, tc, cumvd) result(dlt_cumvd)
+    real(r8), intent(in) :: tmax
+    real(r8), intent(in) :: tmin
     real(r8), intent(in) :: tc
     real(r8), intent(in) :: cumvd
 
     real(r8) :: dlt_cumvd
     real(r8) :: vd, vd1, vd2
     dlt_cumvd=0._r8
-    if ((tair_min < 15.0_r8) .and. (tair_max > 0.0_r8)) then
+    if ((tmin < 15.0_r8) .and. (tmax > 0.0_r8)) then
       !!Cold
       vd1 = 1.4_r8 - 0.0778_r8 * tc
-      vd2 = 0.5_r8 + 13.44_r8 / ((tair_max-tair_min + 3._r8)**2) * tc
+      vd2 = 0.5_r8 + 13.44_r8 / ((tmax-tmin + 3._r8)**2) * tc
       vd = min (vd1, vd2)
       dlt_cumvd = max (vd, 0.0)
     end if
-    if ((tair_max > 30._r8) .and. ((cumvd + dlt_cumvd) < 10._r8)) then
+    if ((tmax > 30._r8) .and. ((cumvd + dlt_cumvd) < 10._r8)) then
       !!high temperature will reduce vernalization
-      dlt_cumvd = - 0.5_r8*(tair_max - 30.0_r8)
+      dlt_cumvd = - 0.5_r8*(tmax - 30.0_r8)
       dlt_cumvd = - min(-(dlt_cumvd), cumvd)
     end if
   end function wheat_vernaliz_days
@@ -503,79 +503,79 @@ contains
     rate=interpolation(sw_avail_ratio, response_curve%x, response_curve%y, response_curve%num_pts)
   end function rel_emerg_rate
   
-  function TargetTT_from_cumvd(cumvd, response_curve) result(TargetTT)
+  function target_tt_from_cumvd(cumvd, response_curve) result(target_tt)
     !!DESCRIPTION:
-    !!for calculating the target thermal time for a phase using the cumvd~TargetTT relationship
+    !!for calculating the target thermal time for a phase using the cumvd~target_tt relationship
     !!ARGUMENTS:
     real(r8),                  intent(in) :: cumvd
     type(response_curve_type), intent(in) :: response_curve
-    real(r8) :: TargetTT
-    TargetTT=interpolation(cumvd, response_curve%x, response_curve%y, response_curve%num_pts)
-  end function TargetTT_from_cumvd
+    real(r8) :: target_tt
+    target_tt=interpolation(cumvd, response_curve%x, response_curve%y, response_curve%num_pts)
+  end function target_tt_from_cumvd
 
-  function TargetTT_from_PhotoPeriod(photoperiod, response_curve) result(TargetTT)
+  function target_tt_from_photoperiod(photoperiod, response_curve) result(target_tt)
     !!DESCRIPTION:
-    !!for calculating the target thermal time for a phase using the photoperiod~TargetTT relationship
+    !!for calculating the target thermal time for a phase using the photoperiod~target_tt relationship
     !!ARGUMENTS:
     real(r8),                  intent(in) :: photoperiod
     type(response_curve_type), intent(in) :: response_curve
-    real(r8) :: TargetTT
-    TargetTT=interpolation(photoperiod, response_curve%x, response_curve%y, response_curve%num_pts)
-  end function TargetTT_from_PhotoPeriod
+    real(r8) :: target_tt
+    target_tt=interpolation(photoperiod, response_curve%x, response_curve%y, response_curve%num_pts)
+  end function target_tt_from_photoperiod
 
-  function DailyTT(tMax, tMin, response_curve) result(TT)
+  function get_daily_tt(tmax, tmin, response_curve) result(tt)
     !!DESCRIPTION:
     !!to calculate the daily thermal time
 
     !!ARGUMENTS:
-    real(r8), intent(in):: tMax  !daily maximum air temperature (K)
-    real(r8), intent(in):: tMin  !daily minimum air temperature (K)
+    real(r8), intent(in):: tmax  !daily maximum air temperature (K)
+    real(r8), intent(in):: tmin  !daily minimum air temperature (K)
     type(response_curve_type), intent(in) :: response_curve
 
     integer :: period, period_num
-    real(r8):: tMean3Hour, TT
+    real(r8):: tmean_3hour, tt
 
-    TT = 0
+    tt = 0
     period_num=8  !!3-hourly
     do period = 1, period_num
-      tMean3Hour = temp3Hr(tMax, tMin, period)
-      TT = TT + ThermalTime(tMean3Hour-273.15_r8, response_curve)
+      tmean_3hour = temp_3hourly(tmax, tmin, period)
+      tt = tt + thermal_time(tmean_3hour-273.15_r8, response_curve)
     end do
-    TT=TT/period_num
-  end function DailyTT
+    tt=tt/period_num
+  end function get_daily_tt
 
 
-  function ThermalTime(Temp, response_curve) result(tt)
+  function thermal_time(temp, response_curve) result(tt)
     !!DESCRIPTION:
-    !for calculating thermal time for a particular temperature using the Temp-TT curve
+    !for calculating thermal time for a particular temperature using the Temp-tt curve
 
     !!ARGUMENTS:
-    real(r8),                  intent(in) :: Temp            ! subdaily temperature (degree C)
+    real(r8),                  intent(in) :: temp            ! subdaily temperature (degree C)
     type(response_curve_type), intent(in) :: response_curve
     real(r8) :: tt  !thermal time for output
-    tt=interpolation(Temp, response_curve%x, response_curve%y, response_curve%num_pts)
-  end function ThermalTime
+    tt=interpolation(temp, response_curve%x, response_curve%y, response_curve%num_pts)
+  end function thermal_time
 
-  function temp3Hr (tMax, tMin, period) result(temp)
+  function temp_3hourly (tmax, tmin, period) result(temp)
     !!DESCRIPTION:
     !!to estimate 3-hourly air temperature based on daily min and max temperature
     !!this is an emprical relationship used in CERES and APSIM model
 
     !!ARGUMENTS:
-    real(r8), intent(in) :: tMax            ! daily max air temperature (K or degree C)
-    real(r8), intent(in) :: tMin            ! daily min air temperature (K or degree C)
-    integer,  intent(in) :: period      ! count of 3hours (from 1 to 8, unitless)
+    real(r8), intent(in) :: tmax            ! daily max air temperature (K or degree C)
+    real(r8), intent(in) :: tmin            ! daily min air temperature (K or degree C)
+    integer,  intent(in) :: period          ! count of 3hours (from 1 to 8, unitless)
 
-    real(r8) :: tRangeFract
-    real(r8) :: diurnalRange
+    real(r8) :: t_range_fract
+    real(r8) :: diurnal_range
     real(r8) :: deviation
     real(r8) :: temp
 
-    tRangeFract  = 0.92105_r8+0.1140_r8*period-0.0703_r8*(period**2)+0.0053_r8*(period**3)
-    diurnalRange = tMax-tMin
-    deviation    = tRangeFract * diurnalRange
+    t_range_fract  = 0.92105_r8+0.1140_r8*period-0.0703_r8*(period**2)+0.0053_r8*(period**3)
+    diurnal_range  = tmax-tmin
+    deviation      = t_range_fract * diurnal_range
 
-    temp = tMin + deviation
-  end function temp3Hr
+    temp = tmin + deviation
+  end function temp_3hourly
 
 end module AgSysPhenology
