@@ -199,7 +199,9 @@ contains
 
     associate( &
          begp => bounds%begp, &
-         endp => bounds%endp  &
+         endp => bounds%endp, &
+         begc => bounds%begc, &
+         endc => bounds%endc  &
          )
 
     do p = begp, endp
@@ -220,6 +222,23 @@ contains
 
        end associate
     end do
+
+    this%current_stage_patch(begp:endp) = 0._r8
+    this%emerged_patch(begp:endp) = .false.
+
+    this%days_in_phase_patch(:, begp:endp) = 0._r8
+    this%days_after_phase_patch(:, begp:endp) = 0._r8
+
+    this%acc_emerged_thermal_time_patch(begp:endp) = 0._r8
+    this%acc_thermal_time_in_phase_patch(:, begp:endp) = 0._r8
+    this%acc_thermal_time_after_phase_patch(:, begp:endp) = 0._r8
+    this%acc_vernalization_days_patch(:) = 0._r8
+
+    ! TODO(wjs, 2019-11-12) We may be able to remove this initialization once we properly
+    ! initialize the accumulator field related to this variable
+    this%h2osoi_liq_24hr_col(begc:endc, :) = 0._r8
+
+    this%days_after_sowing_patch(begp:endp) = 0
 
     end associate
 
