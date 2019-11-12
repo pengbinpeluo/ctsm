@@ -5,6 +5,25 @@ module test_enumerations
   ! There are various enumerations defined in the AgSys code. The tests in this module
   ! ensure that the enumerations don't have missing or duplicate values.
 
+  ! NOTE(wjs, 2019-11-12) These tests won't catch the case where a new constant 'bar' is
+  ! added that has the same integer value as an existing constant 'foo', and you also
+  ! forget to add 'bar' to the unit test. The hope is that you will update the unit test
+  ! whenever the enumeration changes in the code, and so you have a double-checking
+  ! mechanism; it's less likely that you'd make a mistake in both places.
+
+  ! TODO(wjs, 2019-11-12) This idea of testing enumerations is probably useful in other
+  ! parts of CTSM, too. I think it would be helpful to have some general-purpose
+  ! enumeration testing facility - maybe a .pf file in unit_test_shr. (I think individual
+  ! unit test builds would need to include this additional .pf file in their build - as
+  ! opposed to this being built into the clm library - because it needs to be handled by
+  ! the pfunit preprocessor.) This would be a custom assertion routine that accepts
+  ! minval, maxval, and a list of elements in the enumeration; also a message that would
+  ! be printed if the assertion fails. (Then make sure: (1) if I change the unit tests
+  ! here to use that, they should still pass; (2) if minval is incorrect, they should
+  ! fail; (3) if maxval is incorrect, they should fail; (4) with a missing element, they
+  ! should fail; (5) with two elements having the same value, they should fail.) (Also
+  ! add the above NOTE comment in that new file.)
+
   use pfunit_mod
   use AgSysConstants
   use AgSysPhases
@@ -41,12 +60,13 @@ contains
   subroutine test_crop_types(this)
     ! Make sure that each crop type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
-    integer :: counts(crop_type_maxval)
-    integer :: expected_counts(crop_type_maxval)
+    integer :: counts(crop_type_minval:crop_type_maxval)
+    integer :: expected_counts(crop_type_minval:crop_type_maxval)
 
     counts(:) = 0
     expected_counts(:) = 1
 
+    call add_one(counts(crop_type_not_handled))
     call add_one(counts(crop_type_maize))
     call add_one(counts(crop_type_soybean))
     call add_one(counts(crop_type_wheat))
