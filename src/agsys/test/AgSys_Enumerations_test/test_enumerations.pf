@@ -60,12 +60,13 @@ contains
   subroutine test_crop_types(this)
     ! Make sure that each crop type integer value appears once and only once
     class(TestEnumerations), intent(inout) :: this
-    integer :: counts(crop_type_maxval)
-    integer :: expected_counts(crop_type_maxval)
+    integer :: counts(crop_type_minval:crop_type_maxval)
+    integer :: expected_counts(crop_type_minval:crop_type_maxval)
 
     counts(:) = 0
     expected_counts(:) = 1
 
+    call add_one(counts(crop_type_not_handled))
     call add_one(counts(crop_type_maize))
     call add_one(counts(crop_type_soybean))
     call add_one(counts(crop_type_wheat))
