@@ -112,6 +112,13 @@ contains
              c = patch%column(p)
              cultivar = this%agsys_inst%cultivar_patch(p)
 
+             call this%agsys_inst%agsys_environmental_inputs%SetValues( &
+                  photoperiod    = grc%dayl(g), &
+                  tair_max       = temperature_inst%t_ref2m_max_patch(p), &
+                  tair_min       = temperature_inst%t_ref2m_min_patch(p), &
+                  tc_24hr        = temperature_inst%t_veg24_patch(p), &
+                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
+
              call DoTimeStep_Phenology_Placeholder( &
                   ! Inputs, time-constant
                   croptype        = crop_type, &
@@ -119,11 +126,7 @@ contains
                   cultivar_params = this%crop_cultivar_params(crop_type)%cultivar_params(cultivar), &
 
                   ! Inputs, time-varying
-                  photoperiod    = grc%dayl(g), &
-                  tair_max       = temperature_inst%t_ref2m_max_patch(p), &
-                  tair_min       = temperature_inst%t_ref2m_min_patch(p), &
-                  tc             = temperature_inst%t_veg24_patch(p), &
-                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi), &
+                  agsys_environmental_inputs = this%agsys_inst%agsys_environmental_inputs, &
 
                   ! Outputs
                   days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &

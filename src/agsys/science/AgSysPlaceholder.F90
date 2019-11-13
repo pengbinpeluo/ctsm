@@ -5,6 +5,7 @@ module AgSysPlaceholder
   use AgSysKinds , only : r8
   use AgSysParams, only : agsys_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
+  use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
 
   implicit none
   private
@@ -14,7 +15,7 @@ module AgSysPlaceholder
 contains
 
   subroutine DoTimeStep_Phenology_Placeholder(croptype, phases, cultivar_params, &
-       photoperiod, tair_max, tair_min, tc, h2osoi_liq_24hr, &
+       agsys_environmental_inputs, &
        days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
        days_after_phase, tt_after_phase, cumvd)
     ! Inputs, time-constant
@@ -23,11 +24,7 @@ contains
     type(agsys_cultivar_params_type), intent(in) :: cultivar_params
 
     ! Inputs, time-varying
-    real(r8), intent(in) :: photoperiod ! same as day length [h] (exists: grc%dayl)
-    real(r8), intent(in) :: tair_max  ! daily max [K] (exists, at least by end of driver loop)
-    real(r8), intent(in) :: tair_min  ! daily minimum [K] (exists)
-    real(r8), intent(in) :: tc        ! daily mean canopy temperature [K] (exists: t_veg24_patch)
-    real(r8), intent(in) :: h2osoi_liq_24hr(:)  ! 1 .. num_soil_layers
+    type(agsys_environmental_inputs_type), intent(in) :: agsys_environmental_inputs
 
     ! Outputs
     integer, intent(inout) :: days_after_sowing

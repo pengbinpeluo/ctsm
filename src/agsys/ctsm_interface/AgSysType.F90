@@ -16,6 +16,7 @@ module AgSysType
   use PatchType        , only : patch_type
   use AgSysRuntimeConstants, only : agsys_max_phases
   use AgSysConstants, only : crop_type_not_handled, crop_type_maize
+  use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   !
   implicit none
   private
@@ -69,7 +70,10 @@ module AgSysType
      real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), just over 1:nlevsoi
 
      integer, pointer, public :: days_after_sowing_patch(:)
-     
+
+     ! We store an instance of this so that we only need to allocate memory for it once,
+     ! in initialization
+     type(agsys_environmental_inputs_type), public :: agsys_environmental_inputs
 
    contains
      procedure, public :: Init
@@ -147,6 +151,9 @@ contains
     allocate(this%h2osoi_liq_24hr_col(begc:endc, 1:nlevsoi)); this%h2osoi_liq_24hr_col(:,:) = nan
 
     allocate(this%days_after_sowing_patch(begp:endp))  ; this%days_after_sowing_patch(:) = 0
+
+    call this%agsys_environmental_inputs%Init( &
+         nlevsoi = nlevsoi)
 
     end associate
   end subroutine InitAllocate
