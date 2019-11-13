@@ -131,10 +131,10 @@ contains
                   ! Outputs
                   days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
                   current_stage     = this%agsys_inst%current_stage_patch(p), &
-                  days_in_phase     = this%agsys_inst%days_in_phase_patch(:,p), &
-                  tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(:,p), &
-                  days_after_phase  = this%agsys_inst%days_after_phase_patch(:,p), &
-                  tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(:,p), &
+                  days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
+                  tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
+                  days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
+                  tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
                   cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
 
           end if
