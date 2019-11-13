@@ -21,7 +21,7 @@ module AgSysInterface
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams, ReadPhases
   use AgSysRuntimeConstants, only : InitRuntimeConstants
-  use AgSysPlaceholder, only : DoTimeStep_Phenology_Placeholder, AgsysAbioticStress_Placeholder
+  use AgSysPlaceholder, only : DoTimeStep_Phenology_Placeholder
   !
   implicit none
   private
@@ -112,14 +112,6 @@ contains
              c = patch%column(p)
              cultivar = this%agsys_inst%cultivar_patch(p)
 
-             call AgsysAbioticStress_Placeholder( &
-                  ! Inputs, time-varying
-                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi), &
-
-                  ! Outputs
-                  sw_avail_ratio = sw_avail_ratio, &
-                  pesw_seedlayer = pesw_seedlayer)
-
              call DoTimeStep_Phenology_Placeholder( &
                   ! Inputs, time-constant
                   croptype        = crop_type, &
@@ -131,8 +123,7 @@ contains
                   tair_max       = temperature_inst%t_ref2m_max_patch(p), &
                   tair_min       = temperature_inst%t_ref2m_min_patch(p), &
                   tc             = temperature_inst%t_veg24_patch(p), &
-                  sw_avail_ratio = sw_avail_ratio, &
-                  pesw_seedlayer = pesw_seedlayer, &
+                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi), &
 
                   ! Outputs
                   days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
@@ -142,6 +133,7 @@ contains
                   days_after_phase  = this%agsys_inst%days_after_phase_patch(:,p), &
                   tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(:,p), &
                   cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
+
           end if
        end do
     end if
