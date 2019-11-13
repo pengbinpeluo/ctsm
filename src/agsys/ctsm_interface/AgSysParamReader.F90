@@ -79,7 +79,11 @@ contains
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_FL((size(crop_phases) == crop_type_maxval), sourcefile, __LINE__)
-    
+
+    ! TODO(wjs, 2019-11-13) For now we're initializing all crop phases to 0. Eventually
+    ! this won't be needed because we'll initialize all crop phases from data.
+    crop_phases(:)%num_phases = 0
+
     crop_phases(crop_type_maize)%num_phases=11
     crop_phases(crop_type_maize)%stage_name=[character(len=max_str_len_for_phase_def) :: &
                                               'sowing', 'germination', 'emergence', 'end_of_juvenile', &
