@@ -12,7 +12,7 @@ module AgSysType
   use clm_varpar       , only : nlevsoi
   use clm_varcon       , only : spval
   use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
-  use histFileMod      , only : hist_addfld1d
+  use histFileMod      , only : hist_addfld1d, hist_addfld2d
   use PatchType        , only : patch_type
   use AgSysRuntimeConstants, only : agsys_max_phases
   use AgSysConstants, only : crop_type_not_handled, crop_type_maize
@@ -197,6 +197,12 @@ contains
     call hist_addfld1d(fname='AGSYS_CURRENT_STAGE', units='-', &
          avgflag='I', long_name='Current phenological stage number (at end of history period)', &
          ptr_patch=this%current_stage_patch)
+
+    this%acc_thermal_time_in_phase_patch(begp:endp,:) = spval
+    call hist_addfld2d(fname='AGSYS_ACC_THERMAL_TIME_IN_PHASE', units='deg-days', &
+         type2d='agsys_phases', &
+         avgflag='I', long_name='Accumulated thermal time in each phase (at end of history period)', &
+         ptr_patch=this%acc_thermal_time_in_phase_patch)
 
     end associate
 
