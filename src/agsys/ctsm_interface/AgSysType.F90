@@ -12,10 +12,11 @@ module AgSysType
   use clm_varpar       , only : nlevsoi
   use clm_varcon       , only : spval
   use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
-  use histFileMod      , only : hist_addfld1d
+  use histFileMod      , only : hist_addfld1d, hist_addfld2d
   use PatchType        , only : patch_type
   use AgSysRuntimeConstants, only : agsys_max_phases
   use AgSysConstants, only : crop_type_not_handled, crop_type_maize
+  use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   !
   implicit none
   private
@@ -51,8 +52,23 @@ module AgSysType
      ! Whether the crop has emerged yet this season
      logical, pointer, public :: emerged_patch(:)
 
-     real(r8), pointer, public :: days_in_phase_patch(:,:)  ! number of days in each phase [phase, patch] (note different dimension order than typical for CTSM)
-     real(r8), pointer, public :: days_after_phase_patch(:,:)  ! number of days after each phase [phase, patch] (note different dimension order than typical for CTSM)
+     ! TODO(wjs, 2019-11-13) 2-d variables are stored with patch (or column) as the first
+     ! dimension. This follows CTSM conventions, but is less efficient for AgSys, where we
+     ! operate on a single point at a time. Ideally, for the sake of performance, we would
+     ! switch this dimension order for 2-d AgSys variables. However, currently that
+     ! prevents us from doing history output for the given 2-d variable. (Also, although
+     ! the restart routines seem to be general enough to handle variables with either
+     ! dimension ordering - via switchdim - it doesn't look like there are any variables
+     ! that currently have switchdim = .false., so some changes may be needed to support
+     ! that robustly, in the restart utilities and/or in init_interp.) At some point, we
+     ! should consider putting in place the necessary generalization for the history
+     ! infrastructure to handle 2-d variables with this switched dimension ordering (as
+     ! long as this can be done in a way that doesn't hurt the efficiency of the history
+     ! infrastructure). At that point, we should change the variables here so that patch
+     ! (or column) is the second dimension.
+
+     real(r8), pointer, public :: days_in_phase_patch(:,:)  ! number of days in each phase [patch, phase]
+     real(r8), pointer, public :: days_after_phase_patch(:,:)  ! number of days after each phase [patch, phase]
 
      ! TODO(wjs, 2019-11-01) We may not need all of these - i.e., it maybe unnecessary to
      ! have both an emerged_thermal_time and thermal time for each phase (since the former
@@ -61,15 +77,18 @@ module AgSysType
      ! example, to store the thermal time just for the previous phase. (If we can avoid
      ! supporting this full generality, that could be good to avoid restart file bloat.)
      real(r8), pointer, public :: acc_emerged_thermal_time_patch(:)  ! accumulated thermal time since emergence (deg-days)
-     real(r8), pointer, public :: acc_thermal_time_in_phase_patch(:,:) ! accumulated thermal time in each phase (deg-days) [phase, patch] (note different dimension order than typical for CTSM)
-     real(r8), pointer, public :: acc_thermal_time_after_phase_patch(:,:) ! accumulated thermal time after each phase (deg-days) [phase, patch] (note different dimension order than typical for CTSM)
+     real(r8), pointer, public :: acc_thermal_time_in_phase_patch(:,:) ! accumulated thermal time in each phase (deg-days) [patch, phase]
+     real(r8), pointer, public :: acc_thermal_time_after_phase_patch(:,:) ! accumulated thermal time after each phase (deg-days) [patch, phase]
 
-     real(r8), pointer, public :: acc_vernalization_days_patch(:) ! accumulated vernalization days (for crops with vernalization) (unit: days) [phase, patch] (note different dimension order than typical for CTSM)
+     real(r8), pointer, public :: acc_vernalization_days_patch(:) ! accumulated vernalization days (for crops with vernalization) (unit: days)
 
      real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), just over 1:nlevsoi
 
      integer, pointer, public :: days_after_sowing_patch(:)
-     
+
+     ! We store an instance of this so that we only need to allocate memory for it once,
+     ! in initialization
+     type(agsys_environmental_inputs_type), public :: agsys_environmental_inputs
 
    contains
      procedure, public :: Init
@@ -131,15 +150,15 @@ contains
     allocate(this%current_stage_patch(begp:endp)); this%current_stage_patch(:) = nan
     allocate(this%emerged_patch(begp:endp)); this%emerged_patch(:) = .false.
 
-    allocate(this%days_in_phase_patch(1:agsys_max_phases, begp:endp))
+    allocate(this%days_in_phase_patch(begp:endp, 1:agsys_max_phases))
     this%days_in_phase_patch(:,:) = nan
-    allocate(this%days_after_phase_patch(1:agsys_max_phases, begp:endp))
+    allocate(this%days_after_phase_patch(begp:endp, 1:agsys_max_phases))
     this%days_after_phase_patch(:,:) = nan
 
     allocate(this%acc_emerged_thermal_time_patch(begp:endp)) ; this%acc_emerged_thermal_time_patch(:) = nan
-    allocate(this%acc_thermal_time_in_phase_patch(1:agsys_max_phases, begp:endp))
+    allocate(this%acc_thermal_time_in_phase_patch(begp:endp, 1:agsys_max_phases))
     this%acc_thermal_time_in_phase_patch(:,:) = nan
-    allocate(this%acc_thermal_time_after_phase_patch(1:agsys_max_phases, begp:endp))
+    allocate(this%acc_thermal_time_after_phase_patch(begp:endp, 1:agsys_max_phases))
     this%acc_thermal_time_after_phase_patch(:,:) = nan
 
     allocate(this%acc_vernalization_days_patch(begp:endp)); this%acc_vernalization_days_patch(:) = nan
@@ -147,6 +166,9 @@ contains
     allocate(this%h2osoi_liq_24hr_col(begc:endc, 1:nlevsoi)); this%h2osoi_liq_24hr_col(:,:) = nan
 
     allocate(this%days_after_sowing_patch(begp:endp))  ; this%days_after_sowing_patch(:) = 0
+
+    call this%agsys_environmental_inputs%Init( &
+         nlevsoi = nlevsoi)
 
     end associate
   end subroutine InitAllocate
@@ -175,6 +197,12 @@ contains
     call hist_addfld1d(fname='AGSYS_CURRENT_STAGE', units='-', &
          avgflag='I', long_name='Current phenological stage number (at end of history period)', &
          ptr_patch=this%current_stage_patch)
+
+    this%acc_thermal_time_in_phase_patch(begp:endp,:) = spval
+    call hist_addfld2d(fname='AGSYS_ACC_THERMAL_TIME_IN_PHASE', units='deg-days', &
+         type2d='agsys_phases', &
+         avgflag='I', long_name='Accumulated thermal time in each phase (at end of history period)', &
+         ptr_patch=this%acc_thermal_time_in_phase_patch)
 
     end associate
 
@@ -226,12 +254,12 @@ contains
     this%current_stage_patch(begp:endp) = 0._r8
     this%emerged_patch(begp:endp) = .false.
 
-    this%days_in_phase_patch(:, begp:endp) = 0._r8
-    this%days_after_phase_patch(:, begp:endp) = 0._r8
+    this%days_in_phase_patch(begp:endp, :) = 0._r8
+    this%days_after_phase_patch(begp:endp, :) = 0._r8
 
     this%acc_emerged_thermal_time_patch(begp:endp) = 0._r8
-    this%acc_thermal_time_in_phase_patch(:, begp:endp) = 0._r8
-    this%acc_thermal_time_after_phase_patch(:, begp:endp) = 0._r8
+    this%acc_thermal_time_in_phase_patch(begp:endp, :) = 0._r8
+    this%acc_thermal_time_after_phase_patch(begp:endp, :) = 0._r8
     this%acc_vernalization_days_patch(:) = 0._r8
 
     ! TODO(wjs, 2019-11-12) We may be able to remove this initialization once we properly

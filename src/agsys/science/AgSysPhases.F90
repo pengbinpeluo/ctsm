@@ -67,7 +67,7 @@ module AgSysPhases
      private
 
      ! Public data members
-     integer, allocatable, public :: num_phases ! number of phases for this crop (arrays are dimensioned to be this large)
+     integer, public :: num_phases ! number of phases for this crop (arrays are dimensioned to be this large)
 
      ! Each of these arrays are dimensioned by phase. Stage is defined as a point in time
      ! (e.g., the time of sowing, or the time of germination). Phase is defined as the
