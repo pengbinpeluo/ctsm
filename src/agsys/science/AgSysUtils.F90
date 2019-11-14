@@ -5,38 +5,68 @@ module AgSysUtils
   use AgSysKinds, only : r8
   
   implicit none
+
+  type, public :: response_curve_type
+     private
+
+     ! Public data members
+     integer, public :: num_pts
+     real(r8), allocatable, public :: x(:)
+     real(r8), allocatable, public :: y(:)
+  end type response_curve_type
+
 contains
   !-------------------------------------------------
   !more general functions for mathematical operations
   !-------------------------------------------------
-  function interpolation(x, xx, yy, CPNum) result(y)
+  function temp_3hourly (tmax, tmin, period) result(temp)
+    !!DESCRIPTION:
+    !!to estimate 3-hourly air temperature based on daily min and max temperature
+    !!this is an emprical relationship used in CERES and APSIM model
+
+    !!ARGUMENTS:
+    real(r8), intent(in) :: tmax            ! daily max air temperature (K or degree C)
+    real(r8), intent(in) :: tmin            ! daily min air temperature (K or degree C)
+    integer,  intent(in) :: period          ! count of 3hours (from 1 to 8, unitless)
+
+    real(r8) :: t_range_fract
+    real(r8) :: diurnal_range
+    real(r8) :: deviation
+    real(r8) :: temp
+
+    t_range_fract  = 0.92105_r8+0.1140_r8*period-0.0703_r8*(period**2)+0.0053_r8*(period**3)
+    diurnal_range  = tmax-tmin
+    deviation      = t_range_fract * diurnal_range
+
+    temp = tmin + deviation
+  end function temp_3hourly
+
+  function interpolation(x, rc) result(y)
     !!DESCRIPTION:
     !!A general function for piece-wise linear interpolation
 
     !!ARGUMENTS:
-    real(r8), intent(in) :: x         ! the value on the x-axis whose y value is to be interpolated
-    real(r8), intent(in) :: xx(:)     ! important transition points in x-axis
-    real(r8), intent(in) :: yy(:)     ! corresponding points on y-axis
-    integer,  intent(in) :: CPNum     ! number of critical points in the piece-wise linear function
+    real(r8), intent(in) :: x                    ! the value on the x-axis whose y value is to be interpolated
+    real(response_curve_type), intent(in) :: rc  ! response curve y~f(x)
 
     real(r8) :: y
     integer:: loc
 
     loc=1
-    do while (loc<=CPNum)
-      if (x<=xx(1)) then
-        y=yy(1)
-        exit
-      else if (x>xx(CPNum)) then
-        y=yy(CPNum)
-        exit
-      else if ((x>xx(loc)) .and. (x<=xx(loc+1))) then
-        y = (yy(loc+1)-yy(loc))/(xx(loc+1)-xx(loc))*(x-xx(loc))+yy(loc)
-        exit
-      else
-        loc=loc+1
-      end if
-    end do
+    if (x<=rc%x(1)) then
+      y=rc%y(1)
+    else if (x>rc%x(rc%num_pts)) then
+        y=rc%y(rc%num_pts)
+    else
+      do loc=1, rc%num_pts-1
+        ! We already know that x > xx(loc) based on checks done in an earlier iteration
+        ! (or, for loc = 1, based on the check done above)
+        if (x<=rc%x(loc+1)) then
+          y = (rc%y(loc+1)-rc%y(loc))/(rc%x(loc+1)-rc%x(loc))*(x-rc%x(loc))+rc%y(loc)
+          exit
+        end if
+      end do
+    end if
   end function interpolation
   
   function bound(x, min_value, max_value) result(bounded_x)

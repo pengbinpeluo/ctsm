@@ -3,7 +3,6 @@ module AgSysPlaceholder
   ! TODO(wjs, 2019-11-08) Remove this module!
 
   use AgSysKinds , only : r8
-  use AgSysParams, only : agsys_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
 
@@ -14,14 +13,12 @@ module AgSysPlaceholder
 
 contains
 
-  subroutine DoTimeStep_Phenology_Placeholder(croptype, phases, cultivar_params, &
+  subroutine DoTimeStep_Phenology_Placeholder(crop, &
        agsys_environmental_inputs, &
        days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
        days_after_phase, tt_after_phase, cumvd)
     ! Inputs, time-constant
-    integer, intent(in) :: croptype
-    type(agsys_phases_type) :: phases
-    type(agsys_cultivar_params_type), intent(in) :: cultivar_params
+    type(agsys_crop_type_generic), intent(in) :: crop
 
     ! Inputs, time-varying
     type(agsys_environmental_inputs_type), intent(in) :: agsys_environmental_inputs
