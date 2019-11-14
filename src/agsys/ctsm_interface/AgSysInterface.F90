@@ -45,10 +45,7 @@ module AgSysInterface
      ! index the params by crop type or cultivar: a given call for a single patch only
      ! has access to the parameters for the appropriate crop type and cultivar for that
      ! patch.)
-     type(agsys_crop_cultivar_params_type) :: crop_cultivar_params(crop_type_maxval)
-
-     ! Information about the phases for each crop type
-     type(agsys_phases_type) :: crop_phases(crop_type_maxval)
+     type(agsys_cultivars_of_crop_type) :: crops(crop_type_maxval)
 
      type(agsys_type) :: agsys_inst
 
@@ -110,7 +107,7 @@ contains
           if (crop_type /= crop_type_not_handled) then
              g = patch%gridcell(p)
              c = patch%column(p)
-             cultivar = this%agsys_inst%cultivar_patch(p)
+             cultivar_type = this%agsys_inst%cultivar_patch(p)
 
              call AgsysAbioticStress_Placeholder( &
                   ! Inputs, time-varying
@@ -122,9 +119,7 @@ contains
 
              call DoTimeStep_Phenology_Placeholder( &
                   ! Inputs, time-constant
-                  croptype        = crop_type, &
-                  phases          = this%crop_phases(crop_type), &
-                  cultivar_params = this%crop_cultivar_params(crop_type)%cultivar_params(cultivar), &
+                  crop            = this%crops(crop_type)%cultivars(cultivar_type), &
 
                   ! Inputs, time-varying
                   photoperiod    = grc%dayl(g), &

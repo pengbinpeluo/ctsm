@@ -6,21 +6,18 @@ module AgSysParamReader
   !
   ! !USES:
 #include "shr_assert.h"
-  use shr_kind_mod     , only : r8 => shr_kind_r8
-  use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
-  use AgSysParams      , only : agsys_crop_cultivar_params_type
-  use AgSysPhases      , only : agsys_phases_type, &
-                                max_str_len_for_phase_def, &
-                                phase_type_generic, phase_type_germinating, phase_type_emerging, &
-                                phase_type_leaf_appearance
-  use AgSysConstants   , only : crop_type_maxval, crop_type_maize
+  use shr_kind_mod,                 only : r8  => shr_kind_r8
+  use shr_infnan_mod,               only : nan => shr_infnan_nan, assignment(=)
+  use AgSysCropTypeGeneric,         only : agsys_cultivars_of_crop_type, agsys_crop_type_generic
+  use AgSysCropTypePhotoSensitive,  only : agsys_crop_type_photosensitive
+  use AgSysCropTypeMaize,           only : agsys_crop_type_maize
+  use AgSysConstants,               only : crop_type_maxval, crop_type_maize
   !
   implicit none
   private
 
   ! !PUBLIC ROUTINES:
   public :: ReadParams
-  public :: ReadPhases
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -28,71 +25,67 @@ module AgSysParamReader
 contains
 
   !-----------------------------------------------------------------------
-  subroutine ReadParams(crop_cultivar_params)
+  subroutine ReadParams(crops)
     !
     ! !DESCRIPTION:
     ! Read parameters
     !
     ! !ARGUMENTS:
-    type(agsys_crop_cultivar_params_type), intent(inout) :: crop_cultivar_params(:)
+    type(agsys_cultivars_of_crop_type), intent(inout) :: crops(:)
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'ReadParams'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_FL((size(crop_cultivar_params) == crop_type_maxval), sourcefile, __LINE__)
+    SHR_ASSERT_FL((size(crops) == crop_type_maxval), sourcefile, __LINE__)
 
-    allocate(crop_cultivar_params(crop_type_maize)%cultivar_params(1))
-
-    associate(cultivar_params => crop_cultivar_params(crop_type_maize)%cultivar_params(1))
+    allocate(agsys_crop_type_photosensitive :: crops(crop_type_maize)%cultivar(1))
+    
+    !!currently we hard-coded parameters for one maize cultivar (Pioneer_P04612XR_106)
+    !!check the parameter values in the Maize.xml of APSIM
+    !!http://apsrunet.apsim.info/websvn/filedetails.php?repname=apsim&path=%2Ftrunk%2FModel%2FMaize.xml
+    !!TODO(pb, 2019-11-14) read parameters from files
+    associate(cultivar => crops(crop_type_maize)%cultivar(1))
       ! can access params like this:
       ! cultivar_params%shoot_lag
-      cultivar_params%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
-                                             ! into a separate structure later [TODO (2019-11-12, pb)]
-      cultivar_params%p_shoot_lag    = 15._r8  ! [degree-days]
-      cultivar_params%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]
+      call cultivar%init()
+      select type(cultivar)
+        class is (agsys_crop_type_generic)
+          cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
+                                            ! into a separate structure later [TODO (2019-11-12, pb)]
+          cultivar%p_shoot_lag    = 15._r8  ! [degree-days]
+          cultivar%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]
+          cultivar%p_pesw_germ    = 0._r8   ! soil moisture threshold for seed germination
 
-      cultivar_params%rc_tair_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
-      cultivar_params%rc_tair_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
-      cultivar_params%rc_tair_tt%num_pts=5
+          cultivar%rc_tair_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
+          cultivar%rc_tair_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
+          cultivar%rc_tair_tt%num_pts=5
 
-      cultivar_params%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
-      cultivar_params%rc_sw_avail_phenol%y=[0._r8, 1._r8]
-      cultivar_params%rc_sw_avail_phenol%num_pts=2
+          cultivar%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
+          cultivar%rc_sw_avail_phenol%y=[0._r8, 1._r8]
+          cultivar%rc_sw_avail_phenol%num_pts=2
+
+          cultivar%rc_sw_emerg_rate%x=[0._r8, 1._r8]
+          cultivar%rc_sw_emerg_rate%y=[1._r8, 1._r8] !for maize, this is deactivated
+          cultivar%rc_sw_emerg_rate%num_pts=2
+
+        class is (agsys_crop_type_photosensitive)
+          cultivar%rc_photoperiod_target_tt%x=[0._r8, 12.5_r8, 20._r8]
+          cultivar%rc_photoperiod_target_tt%y=[0._r8, 0._r8, 0._r8]
+          cultivar%rc_photoperiod_target_tt%num_pts=3
+        class is (agsys_crop_type_maize)
+          cultivar%tt_emerg_to_endjuv = 275._r8
+          cultivar%tt_flag_to_flower  = 1._r8
+          cultivar%tt_flower_to_maturity = 812._r8
+          cultivar%tt_flower_to_start_grain = 170._r8
+          cultivar%tt_maturity_to_ripe = 1._r8
+          cultivar%potential_kernel_weight = 300._r8
+          cultivar%leaf_no_dead_const = -0.025_r8
+          cultivar%leaf_no_dead_slope = 0.00035_r8      
+      end select
     end associate
 
   end subroutine ReadParams
-
-  !-----------------------------------------------------------------------
-  subroutine ReadPhases(crop_phases)
-    !
-    ! !DESCRIPTION:
-    ! Read phase descriptions for each crop
-    !
-    ! !ARGUMENTS:
-    type(agsys_phases_type), intent(inout) :: crop_phases(:)
-    !
-    ! !LOCAL VARIABLES:
-
-    character(len=*), parameter :: subname = 'ReadPhases'
-    !-----------------------------------------------------------------------
-
-    SHR_ASSERT_FL((size(crop_phases) == crop_type_maxval), sourcefile, __LINE__)
-    
-    crop_phases(crop_type_maize)%num_phases=11
-    crop_phases(crop_type_maize)%stage_name=[character(len=max_str_len_for_phase_def) :: &
-                                              'sowing', 'germination', 'emergence', 'end_of_juvenile', &
-                                              'floral_initiation', 'flag_leaf', 'flowering', &
-                                              'start_grain_fill', 'end_grain_fill', 'maturity', 'harvest_ripe', 'end_crop']
-    crop_phases(crop_type_maize)%phase_name=[character(len=max_str_len_for_phase_def) :: &
-                                              'germinating', 'emerging', 'juvenile', &
-                                              'photosen_sitive', 'leaf_apperance', 'flag_leaf_to_flowering', &
-                                              'flowering_to_grain_filling', 'grain_filling', 'maturing', 'maturity_to_harvest_ripe', 'ready_for_harvesting']
-    crop_phases(crop_type_maize)%phase_type=[phase_type_germinating, phase_type_emerging, phase_type_generic, &
-                                             phase_type_generic, phase_type_generic, phase_type_generic, &
-                                             phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic]
-
-  end subroutine ReadPhases
 
 end module AgSysParamReader

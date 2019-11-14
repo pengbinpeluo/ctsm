@@ -1,7 +1,6 @@
 module AgSysRoot
   use AgSysKinds,  only : r8
-  use AgSysParams, only : response_curve_type
-  use AgSysUtils,  only : interpolation, bound
+  use AgSysUtils,  only : response_curve_type, interpolation, bound
 
   implicit none
 contains
