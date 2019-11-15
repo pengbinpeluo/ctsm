@@ -269,6 +269,8 @@ contains
 
     ! ------------------------------------------------------------------------
     ! For variables not output to history file, initialize over all points
+    !
+    ! TODO(wjs, 2019-11-15) We may just want to initialize these over crop points
     ! ------------------------------------------------------------------------
 
     this%crop_alive_patch(begp:endp) = .false.
