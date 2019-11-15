@@ -38,6 +38,9 @@ contains
   subroutine init(this)
     class(agsys_crop_type_maize), intent(inout) :: this
 
+    ! Initialize the parent class
+    call this%agsys_crop_type_photosensitive%init()
+
     this%croptype                   = crop_type_maize
 
     !!!initialize the parameters

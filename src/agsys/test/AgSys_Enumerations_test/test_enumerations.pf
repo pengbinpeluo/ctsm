@@ -89,7 +89,7 @@ contains
     call add_one(counts(phase_type_generic))
     call add_one(counts(phase_type_germinating))
     call add_one(counts(phase_type_emerging))
-    call add_one(counts(phase_type_photosensitive))
+    call add_one(counts(phase_type_photo_sensitive))
     call add_one(counts(phase_type_inductive))
     call add_one(counts(phase_type_node_number))
     call add_one(counts(phase_type_leaf_appearance))

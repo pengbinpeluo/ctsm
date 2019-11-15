@@ -32,16 +32,17 @@ contains
     !
     ! !ARGUMENTS:
     type(agsys_cultivars_of_crop_type), intent(inout) :: crops(:)
-    class(agsys_crop_type_generic), allocatable :: cultivar
     !
     ! !LOCAL VARIABLES:
+    class(agsys_crop_type_generic), allocatable :: cultivar
+    integer :: crop_type
 
     character(len=*), parameter :: subname = 'ReadParams'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_FL((size(crops) == crop_type_maxval), sourcefile, __LINE__)
 
-    allocate(agsys_crop_type_photosensitive :: crops(crop_type_maize)%cultivars(1))
+    allocate(agsys_crop_type_maize :: crops(crop_type_maize)%cultivars(1))
     
     !!currently we hard-coded parameters for one maize cultivar (Pioneer_P04612XR_106)
     !!check the parameter values in the Maize.xml of APSIM
@@ -95,7 +96,16 @@ contains
           cultivar%leaf_no_dead_const = -0.025_r8
           cultivar%leaf_no_dead_slope = 0.00035_r8      
       end select
-    end associate
+      end associate
+
+      ! TODO(wjs, 2019-11-15) Set other crops / cultivars. For now just initialize to
+      ! default values.
+      do crop_type = 1, crop_type_maxval
+         if (crop_type /= crop_type_maize) then
+            allocate(agsys_crop_type_generic :: crops(crop_type)%cultivars(1))
+            call crops(crop_type)%cultivars(1)%init()
+         end if
+      end do
 
   end subroutine ReadParams
 

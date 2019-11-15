@@ -7,18 +7,6 @@ module AgSysCropTypeGeneric
   
   implicit none
 
-  !!a container type to store the crop type instances
-  type, public :: agsys_crop_container_type
-     private
-     class(agsys_crop_type_generic), allocatable, public :: crop
-  end type agsys_crop_container_type
-
-  !!a container type to store all the cultivars of a given crop type
-  type, public :: agsys_cultivars_of_crop_type
-     private
-     class(agsys_crop_type_generic), allocatable, public :: cultivars(:)
-  end type agsys_cultivars_of_crop_type
-
   !-----------------------------------------------------------------
   !!a generic crop type holding parameters that shared by all crops
   type, public :: agsys_crop_type_generic
@@ -54,6 +42,12 @@ module AgSysCropTypeGeneric
      procedure :: get_final_leaf_no
   end type agsys_crop_type_generic
 
+  !!a container type to store all the cultivars of a given crop type
+  type, public :: agsys_cultivars_of_crop_type
+     private
+     class(agsys_crop_type_generic), allocatable, public :: cultivars(:)
+  end type agsys_cultivars_of_crop_type
+
 contains
   subroutine init(this)
     class(agsys_crop_type_generic), intent(inout) :: this
@@ -64,6 +58,9 @@ contains
     this%rc_tair_tt%num_pts = 0
     this%rc_sw_avail_phenol%num_pts = 0
     this%rc_sw_emerg_rate%num_pts = 0
+
+    ! This will be set later, by the specific child class
+    this%phases%num_phases = 0
   end subroutine init
 
   subroutine vernalization(this, env, cumvd)

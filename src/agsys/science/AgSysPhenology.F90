@@ -16,12 +16,17 @@ module AgSysPhenology
   use AgSysExcepUtils,          only : iulog, endrun 
 
   implicit none
+  private
+
+  public :: AgSysRunPhenology
+
 contains
   !---------------------------------------------------------------
   !Some subroutines
   !
+
   subroutine AgSysRunPhenology(crop, env, soil_cond, &
-                               days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
+                               crop_alive, days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
                                days_after_phase, tt_after_phase, phase_target_tt, cumvd)
 
     !!---------------------------------------------------------
@@ -35,6 +40,7 @@ contains
     type (agsys_soil_condition_type),         intent(in) :: soil_cond
     
     !!OUTPUTS: state variables
+    logical,  intent(inout) :: crop_alive         !!whether the crop is alive (true between planting and sowing)
     integer,  intent(inout) :: days_after_sowing  !!days after sowing, this is an accumulated number since sowing
     real(r8), intent(inout) :: current_stage      !!current stage number
     real(r8), intent(inout) :: days_in_phase(:)   !!days since start of the current phase
