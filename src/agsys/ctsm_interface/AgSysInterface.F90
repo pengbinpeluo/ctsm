@@ -20,7 +20,6 @@ module AgSysInterface
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams
   use AgSysRuntimeConstants, only : InitRuntimeConstants
-  use AgSysPlaceholder, only : DoTimeStep_Phenology_Placeholder
   use AgSysCropTypeGeneric, only : agsys_cultivars_of_crop_type
   use AgSysRoot, only : get_soil_condition
   use AgSysPhenology, only : AgSysRunPhenology
@@ -125,7 +124,6 @@ contains
                   root      = this%agsys_inst%agsys_root_properties, &
                   soil_cond  = this%agsys_inst%agsys_soil_condition)
                   
-             !call DoTimeStep_Phenology_Placeholder( &
              call AgSysRunPhenology ( &
                   ! Inputs, time-constant
                   crop      = this%crops(crop_type)%cultivars(cultivar_type), &

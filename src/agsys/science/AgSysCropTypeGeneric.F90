@@ -7,18 +7,6 @@ module AgSysCropTypeGeneric
   
   implicit none
 
-  !!a container type to store the crop type instances
-  type, public :: agsys_crop_container_type
-     private
-     class(agsys_crop_type_generic), allocatable, public :: crop
-  end type agsys_crop_container_type
-
-  !!a container type to store all the cultivars of a given crop type
-  type, public :: agsys_cultivars_of_crop_type
-     private
-     class(agsys_crop_type_generic), allocatable, public :: cultivars(:)
-  end type agsys_cultivars_of_crop_type
-
   !-----------------------------------------------------------------
   !!a generic crop type holding parameters that shared by all crops
   type, public :: agsys_crop_type_generic
@@ -51,6 +39,12 @@ module AgSysCropTypeGeneric
      procedure :: get_target_tt_photosensitive_phase
      procedure :: get_target_tt_inductive_phase
   end type agsys_crop_type_generic
+
+  !!a container type to store all the cultivars of a given crop type
+  type, public :: agsys_cultivars_of_crop_type
+     private
+     class(agsys_crop_type_generic), allocatable, public :: cultivars(:)
+  end type agsys_cultivars_of_crop_type
 
 contains
   subroutine init(this)
