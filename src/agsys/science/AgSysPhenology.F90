@@ -18,12 +18,49 @@ module AgSysPhenology
   implicit none
   private
 
+  public :: AgSysDeterminePlanting
   public :: AgSysRunPhenology
 
 contains
   !---------------------------------------------------------------
   !Some subroutines
   !
+  subroutine AgSysDeterminePlanting(env, latdeg, &
+       crop_alive, current_stage)
+    !!---------------------------------------------------------
+    !!Determine if it's time to plant; if so, set crop_alive and current_stage
+    !!
+    !!This should only be called if crop_alive is currently false
+    !
+    !!The logic here assumes this is called once per day, so that there will be a day
+    !!that falls exactly on a given threshold value
+    !!---------------------------------------------------------
+    !!INPUTS: time varying forcing variables from hosting land model
+    type (agsys_environmental_inputs_type),   intent(in) :: env
+    real(r8), intent(in) :: latdeg  ! latitude (degrees)
+
+    !!OUTPUTS: state variables
+    logical,  intent(inout) :: crop_alive         !!whether the crop is alive (true between planting and sowing)
+    real(r8), intent(inout) :: current_stage      !!current stage number
+    !------------------------------- 
+    logical :: time_to_plant
+
+    time_to_plant = .false.
+    if (latdeg >= 0._r8) then
+       if (env%calday == 135) then
+          time_to_plant = .true.
+       end if
+    else
+       if (env%calday == 318) then
+          time_to_plant = .true.
+       end if
+    end if
+
+    if (time_to_plant) then
+       crop_alive = .true.
+       current_stage = 1._r8
+    end if
+  end subroutine AgSysDeterminePlanting
 
   subroutine AgSysRunPhenology(crop, env, soil_cond, &
                                crop_alive, days_after_sowing, current_stage, days_in_phase, tt_in_phase, &

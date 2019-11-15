@@ -22,7 +22,7 @@ module AgSysInterface
   use AgSysRuntimeConstants, only : InitRuntimeConstants
   use AgSysCropTypeGeneric, only : agsys_cultivars_of_crop_type
   use AgSysRoot, only : get_soil_condition
-  use AgSysPhenology, only : AgSysRunPhenology
+  use AgSysPhenology, only : AgSysDeterminePlanting, AgSysRunPhenology
   !
   implicit none
   private
@@ -113,15 +113,25 @@ contains
              c = patch%column(p)
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
+             call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
+                  photoperiod    = grc%dayl(g), &
+                  tair_max       = temperature_inst%t_ref2m_max_patch(p), &
+                  tair_min       = temperature_inst%t_ref2m_min_patch(p), &
+                  tc_24hr        = temperature_inst%t_veg24_patch(p), &
+                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
+             if (.not. this%agsys_inst%crop_alive_patch(p)) then
+                call AgSysDeterminePlanting( &
+                     ! Inputs
+                     env           = this%agsys_inst%agsys_environmental_inputs, &
+                     latdeg        = grc%latdeg(g), &
+
+                     ! Outputs
+                     crop_alive    = this%agsys_inst%crop_alive_patch(p), &
+                     current_stage = this%agsys_inst%current_stage_patch(p))
+             end if
 
              if (this%agsys_inst%crop_alive_patch(p)) then
-                call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
-                     photoperiod    = grc%dayl(g), &
-                     tair_max       = temperature_inst%t_ref2m_max_patch(p), &
-                     tair_min       = temperature_inst%t_ref2m_min_patch(p), &
-                     tc_24hr        = temperature_inst%t_veg24_patch(p), &
-                     h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
                 call get_soil_condition( &
                      crop      = this%crops(crop_type)%cultivars(cultivar_type), &
