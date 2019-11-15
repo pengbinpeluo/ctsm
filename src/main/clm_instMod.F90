@@ -470,6 +470,10 @@ contains
        call crop_inst%InitAccBuffer(bounds)
     end if
 
+    if (use_crop_agsys) then
+       call agsys_interface_inst%InitAccBuffer(bounds)
+    end if
+
     call print_accum_fields()
 
     call ncd_pio_closefile(params_ncid)

@@ -1139,12 +1139,12 @@ contains
 
     this%t_veg24_patch(bounds%begp:bounds%endp) = spval
     call init_accum_field (name='T_VEG24', units='K',                                              &
-         desc='24hr average of vegetation temperature',  accum_type='runmean', accum_period=-1,    &
+         desc='24hr running mean of vegetation temperature',  accum_type='runmean', accum_period=-1,    &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
     this%t_veg240_patch(bounds%begp:bounds%endp) = spval
     call init_accum_field (name='T_VEG240', units='K',                                             &
-         desc='240hr average of vegetation temperature',  accum_type='runmean', accum_period=-10,  &
+         desc='240hr running mean of vegetation temperature',  accum_type='runmean', accum_period=-10,  &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
     call init_accum_field(name='TREFAV', units='K', &
