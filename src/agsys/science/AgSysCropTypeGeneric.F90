@@ -38,6 +38,8 @@ module AgSysCropTypeGeneric
      procedure :: get_stress_phenol_inductive_phase
      procedure :: get_target_tt_photosensitive_phase
      procedure :: get_target_tt_inductive_phase
+     procedure :: update_target_tt_for_phases
+     procedure :: get_final_leaf_no
   end type agsys_crop_type_generic
 
   !!a container type to store all the cultivars of a given crop type
@@ -141,5 +143,19 @@ contains
     write(iulog, *) "This call to ", subname, " is illegal"
     call endrun(msg="Illegal call!")
   end function get_target_tt_inductive_phase
- 
+
+  subroutine update_target_tt_for_phases (this, env, das, current_stage_index, phase_target_tt)
+    class(agsys_crop_type_generic),         intent(in) :: this
+    type (agsys_environmental_inputs_type), intent(in) :: env
+    integer,  intent(in)                    :: das
+    integer,  intent(in)                    :: current_stage_index
+    real(r8), intent(inout)                 :: phase_target_tt(:)
+  end subroutine update_target_tt_for_phases
+  
+  function get_final_leaf_no(this, phase_target_tt) result(final_leaf_no)
+    class(agsys_crop_type_generic), intent(in) :: this
+    real(r8), intent(in)                       :: phase_target_tt(:)
+    real(r8) :: final_leaf_no
+  end function get_final_leaf_no
+  
 end module AgSysCropTypeGeneric

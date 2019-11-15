@@ -44,13 +44,18 @@ contains
   function get_sw_avail_ratio (env, root) result(sw_avail_ratio)
     type(agsys_environmental_inputs_type), intent(in) :: env
     type(agsys_root_type),                 intent(in) :: root
-    real(r8) :: sw_avail_ratio 
+    real(r8) :: sw_avail_ratio
+
+    !TODO(pb, 2019-11-15) do real calculation later using root and soil water profiles
+    sw_avail_ratio=1._r8 
   end function get_sw_avail_ratio
 
   function get_sw_avail_for_layer (env, depth) result(sw_avail)
     type(agsys_environmental_inputs_type), intent(in) :: env
     real(r8), intent(in) :: depth
     real(r8) :: sw_avail
+    !TODO(pb, 2019-11-15) do real calculation later using root and soil depth profiles
+    sw_avail = env%h2osoi_liq_24hr(2)  !! current use the second layer which is 0.02-0.06 m
   end function get_sw_avail_for_layer
 
   function get_sw_avail (env, root) result(sw_avail)

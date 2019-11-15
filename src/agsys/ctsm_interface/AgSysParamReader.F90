@@ -77,11 +77,21 @@ contains
           cultivar%rc_photoperiod_target_tt%y=[0._r8, 0._r8, 0._r8]
           cultivar%rc_photoperiod_target_tt%num_pts=3
         class is (agsys_crop_type_maize)
-          cultivar%tt_emerg_to_endjuv = 275._r8
-          cultivar%tt_flag_to_flower  = 1._r8
-          cultivar%tt_flower_to_maturity = 812._r8
-          cultivar%tt_flower_to_start_grain = 170._r8
-          cultivar%tt_maturity_to_ripe = 1._r8
+          cultivar%target_tt_emerg_to_endjuv = 275._r8
+          cultivar%target_tt_flag_to_flower  = 1._r8
+          cultivar%target_tt_flower_to_maturity = 812._r8
+          cultivar%target_tt_flower_to_start_grain = 170._r8
+          cultivar%target_tt_maturity_to_ripe = 1._r8
+
+          cultivar%leaf_init_rate = 23.2_r8
+          cultivar%leaf_no_seed = 6._r8
+          cultivar%leaf_no_at_emerg = 0.5_r8
+          cultivar%leaf_no_min = 5.0_r8
+          cultivar%leaf_no_max = 40._r8
+          cultivar%leaf_no_critical = 11._r8
+          cultivar%leaf_appearance_rate_early = 65._r8
+          cultivar%leaf_appearance_rate_late = 36._r8
+
           cultivar%potential_kernel_weight = 300._r8
           cultivar%leaf_no_dead_const = -0.025_r8
           cultivar%leaf_no_dead_slope = 0.00035_r8      

@@ -156,7 +156,7 @@ contains
                      tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
                      days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
                      tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
-                     phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
+                     phase_target_tt   = this%agsys_inst%phase_target_thermal_time_patch(p,:), &
                      cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
              end if
 
