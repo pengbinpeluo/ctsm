@@ -52,49 +52,49 @@ contains
       ! can access params like this:
       ! cultivar_params%shoot_lag
       call cultivar%init()
+      cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
+      ! into a separate structure later [TODO (2019-11-12, pb)]
+      cultivar%p_shoot_lag    = 15._r8  ! [degree-days]
+      cultivar%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]
+      cultivar%p_pesw_germ    = 0._r8   ! soil moisture threshold for seed germination
+
+      cultivar%rc_tair_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
+      cultivar%rc_tair_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
+      cultivar%rc_tair_tt%num_pts=5
+
+      cultivar%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
+      cultivar%rc_sw_avail_phenol%y=[0._r8, 1._r8]
+      cultivar%rc_sw_avail_phenol%num_pts=2
+
+      cultivar%rc_sw_emerg_rate%x=[0._r8, 1._r8]
+      cultivar%rc_sw_emerg_rate%y=[1._r8, 1._r8] !for maize, this is deactivated
+      cultivar%rc_sw_emerg_rate%num_pts=2
       select type(cultivar)
-        class is (agsys_crop_type_generic)
-          cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
-                                            ! into a separate structure later [TODO (2019-11-12, pb)]
-          cultivar%p_shoot_lag    = 15._r8  ! [degree-days]
-          cultivar%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]
-          cultivar%p_pesw_germ    = 0._r8   ! soil moisture threshold for seed germination
+      class is (agsys_crop_type_photosensitive)
+         cultivar%rc_photoperiod_target_tt%x=[0._r8, 12.5_r8, 20._r8]
+         cultivar%rc_photoperiod_target_tt%y=[0._r8, 0._r8, 0._r8]
+         cultivar%rc_photoperiod_target_tt%num_pts=3
+      end select
+      select type(cultivar)
+      class is (agsys_crop_type_maize)
+         cultivar%target_tt_emerg_to_endjuv = 275._r8
+         cultivar%target_tt_flag_to_flower  = 1._r8
+         cultivar%target_tt_flower_to_maturity = 812._r8
+         cultivar%target_tt_flower_to_start_grain = 170._r8
+         cultivar%target_tt_maturity_to_ripe = 1._r8
 
-          cultivar%rc_tair_tt%x=[0._r8, 18._r8, 26._r8, 34._r8, 44._r8]
-          cultivar%rc_tair_tt%y=[0._r8, 10._r8, 18._r8, 26._r8, 0._r8]
-          cultivar%rc_tair_tt%num_pts=5
+         cultivar%leaf_init_rate = 23.2_r8
+         cultivar%leaf_no_seed = 6._r8
+         cultivar%leaf_no_at_emerg = 0.5_r8
+         cultivar%leaf_no_min = 5.0_r8
+         cultivar%leaf_no_max = 40._r8
+         cultivar%leaf_no_critical = 11._r8
+         cultivar%leaf_appearance_rate_early = 65._r8
+         cultivar%leaf_appearance_rate_late = 36._r8
 
-          cultivar%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
-          cultivar%rc_sw_avail_phenol%y=[0._r8, 1._r8]
-          cultivar%rc_sw_avail_phenol%num_pts=2
-
-          cultivar%rc_sw_emerg_rate%x=[0._r8, 1._r8]
-          cultivar%rc_sw_emerg_rate%y=[1._r8, 1._r8] !for maize, this is deactivated
-          cultivar%rc_sw_emerg_rate%num_pts=2
-
-        class is (agsys_crop_type_photosensitive)
-          cultivar%rc_photoperiod_target_tt%x=[0._r8, 12.5_r8, 20._r8]
-          cultivar%rc_photoperiod_target_tt%y=[0._r8, 0._r8, 0._r8]
-          cultivar%rc_photoperiod_target_tt%num_pts=3
-        class is (agsys_crop_type_maize)
-          cultivar%target_tt_emerg_to_endjuv = 275._r8
-          cultivar%target_tt_flag_to_flower  = 1._r8
-          cultivar%target_tt_flower_to_maturity = 812._r8
-          cultivar%target_tt_flower_to_start_grain = 170._r8
-          cultivar%target_tt_maturity_to_ripe = 1._r8
-
-          cultivar%leaf_init_rate = 23.2_r8
-          cultivar%leaf_no_seed = 6._r8
-          cultivar%leaf_no_at_emerg = 0.5_r8
-          cultivar%leaf_no_min = 5.0_r8
-          cultivar%leaf_no_max = 40._r8
-          cultivar%leaf_no_critical = 11._r8
-          cultivar%leaf_appearance_rate_early = 65._r8
-          cultivar%leaf_appearance_rate_late = 36._r8
-
-          cultivar%potential_kernel_weight = 300._r8
-          cultivar%leaf_no_dead_const = -0.025_r8
-          cultivar%leaf_no_dead_slope = 0.00035_r8      
+         cultivar%potential_kernel_weight = 300._r8
+         cultivar%leaf_no_dead_const = -0.025_r8
+         cultivar%leaf_no_dead_slope = 0.00035_r8      
       end select
       end associate
 
