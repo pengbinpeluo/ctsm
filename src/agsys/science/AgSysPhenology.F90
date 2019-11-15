@@ -217,12 +217,17 @@ contains
       current_stage = new_stage
     end if
 
-    if ((int(current_stage) >= crop%phases%num_phases) .or. (current_stage < 0.0_r8)) then
+    current_stage_index=int(current_stage)
+    if ((current_stage_index > crop%phases%num_phases) .or. (current_stage < 0.0_r8)) then
       write(iulog, *) "Illegal stage number.."
       call endrun(msg="Illegal stage number...")
     end if
-
-    days_after_sowing=days_after_sowing+1
+    if (crop_alive) then
+      days_after_sowing=days_after_sowing+1
+    end if
+    if (current_stage_index == crop%phases%num_phases) then
+      crop_alive = .false.
+    end if 
   end subroutine AgSysRunPhenology
 
   subroutine initialize_on_sowing(shoot_lag, shoot_rate, sowing_depth, target_tt)
