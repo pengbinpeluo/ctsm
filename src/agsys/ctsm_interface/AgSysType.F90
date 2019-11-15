@@ -80,7 +80,7 @@ module AgSysType
      real(r8), pointer, public :: acc_emerged_thermal_time_patch(:)  ! accumulated thermal time since emergence (deg-days)
      real(r8), pointer, public :: acc_thermal_time_in_phase_patch(:,:) ! accumulated thermal time in each phase (deg-days) [patch, phase]
      real(r8), pointer, public :: acc_thermal_time_after_phase_patch(:,:) ! accumulated thermal time after each phase (deg-days) [patch, phase]
-     real(r8), pointer, public :: phase_target_thermal_time_path(:,:)  !target thermal time to finish a phase (deg-days) [path, phase]
+     real(r8), pointer, public :: phase_target_thermal_time_patch(:,:)  !target thermal time to finish a phase (deg-days) [path, phase]
      real(r8), pointer, public :: acc_vernalization_days_patch(:) ! accumulated vernalization days (for crops with vernalization) (unit: days)
 
      real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), just over 1:nlevsoi

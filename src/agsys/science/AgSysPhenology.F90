@@ -98,6 +98,7 @@ contains
 
     !!!!
 
+    call crop%update_target_tt_for_phases(env, days_after_sowing, current_stage_index, phase_target_tt)
     tt=get_daily_tt(env%tair_max, env%tair_min, crop%rc_tair_tt)
     select case (crop%phases%phase_type(current_stage_index))
       case(phase_type_generic)
