@@ -113,6 +113,8 @@ contains
              c = patch%column(p)
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
+
+
              if (this%agsys_inst%crop_alive_patch(p)) then
                 call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
                      photoperiod    = grc%dayl(g), &
@@ -129,14 +131,15 @@ contains
                      soil_cond  = this%agsys_inst%agsys_soil_condition)
 
                 call AgSysRunPhenology ( &
-                                ! Inputs, time-constant
+                     ! Inputs, time-constant
                      crop      = this%crops(crop_type)%cultivars(cultivar_type), &
                      
-                                ! Inputs, time-varying
+                     ! Inputs, time-varying
                      env       = this%agsys_inst%agsys_environmental_inputs, &
                      soil_cond = this%agsys_inst%agsys_soil_condition, &
                      
-                                ! Outputs
+                     ! Outputs
+                     crop_alive        = this%agsys_inst%crop_alive_patch(p), &
                      days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
                      current_stage     = this%agsys_inst%current_stage_patch(p), &
                      days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
