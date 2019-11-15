@@ -252,7 +252,7 @@ contains
 
           ! TODO(wjs, 2019-11-15) For now, for variables output to history file, just
           ! initialize over the crops that we're handling. Eventually we should
-          ! initialize this for all crops.
+          ! initialize these for all crops.
           this%current_stage_patch(p) = 0._r8
           this%acc_thermal_time_in_phase_patch(p, :) = 0._r8
 
@@ -270,7 +270,9 @@ contains
     ! ------------------------------------------------------------------------
     ! For variables not output to history file, initialize over all points
     !
-    ! TODO(wjs, 2019-11-15) We may just want to initialize these over crop points
+    ! TODO(wjs, 2019-11-15) We may just want to initialize these over crop points. It
+    ! would be best if all variable initialization happened the same way here, regardless
+    ! of whether the variable is output to history files.
     ! ------------------------------------------------------------------------
 
     this%crop_alive_patch(begp:endp) = .false.
