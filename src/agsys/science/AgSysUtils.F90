@@ -47,7 +47,7 @@ contains
 
     !!ARGUMENTS:
     real(r8), intent(in) :: x                    ! the value on the x-axis whose y value is to be interpolated
-    real(response_curve_type), intent(in) :: rc  ! response curve y~f(x)
+    type(response_curve_type), intent(in) :: rc  ! response curve y~f(x)
 
     real(r8) :: y
     integer:: loc

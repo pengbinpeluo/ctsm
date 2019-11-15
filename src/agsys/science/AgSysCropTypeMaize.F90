@@ -4,7 +4,7 @@ module AgSysCropTypeMaize
   use AgSysPhases,                      only : max_str_len_for_phase_def, &
                                                phase_type_generic, &
                                                phase_type_germinating, phase_type_emerging, phase_type_photo_sensitive
-  use AgSysEnvInputs,                   only : agsys_env_inputs_type
+  use AgSysEnvironmentalInputs,         only : agsys_environmental_inputs_type
   use AgSysUtils,                       only : response_curve_type, interpolation
   use AgSysCropTypePhotoSensitive,      only : agsys_crop_type_photosensitive
   implicit none
@@ -28,7 +28,7 @@ module AgSysCropTypeMaize
   end type agsys_crop_type_maize
 contains
   subroutine init(this)
-    type(agsys_crop_type_maize), intent(inout) :: this
+    class(agsys_crop_type_maize), intent(inout) :: this
 
     this%croptype                   = crop_type_maize
 
@@ -41,9 +41,9 @@ contains
     this%tt_flower_to_start_grain   = 0._r8
     this%tt_flower_to_maturity      = 0._r8
     this%tt_maturity_to_ripe        = 0._r8
-    this%tt_potential_kernal_weight = 0._r8
-    this%tt_leaf_no_dead_const      = 0._r8
-    this%tt_leaf_no_dead_slope      = 0._r8
+    this%potential_kernel_weight = 0._r8
+    this%leaf_no_dead_const      = 0._r8
+    this%leaf_no_dead_slope      = 0._r8
     
     !!!initialize the phases
     this%phases%num_phases=11

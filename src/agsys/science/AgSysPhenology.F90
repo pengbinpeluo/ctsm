@@ -2,25 +2,25 @@ module AgSysPhenology
   !--------------Description-------------------------------------
   !This module defines some subroutines for crop phenology simulation
   !
-  use AgSysKinds,           only : r8
-  use AgSysConstants,       only : crop_type_wheat
-  use AgSysCropTypeGeneric, only : agsys_crop_type_generic
-  use AgSysPhases,          only : composite_phase_type
-  use AgSysPhases,          only : phase_type_generic, phase_type_germinating, phase_type_emerging, &
-                                   phase_type_photosensitive, phase_type_inductive, &
-                                   phase_type_leaf_appearance, phase_type_node_number
-  use AgSysPhases,          only : composite_phase_type_vernalization, composite_phase_type_emerge_to_end_of_juvenile
-  use AgSysRoot,            only : get_swdef_phenol, get_nfact_phenol, get_pfact_phenol
-  use AgSysUtils,           only : response_curve_type, temp_3hourly, interpolation, bound, divide, reals_are_equal
-  use AgSysExcepUtils,      only : iulog, endrun 
+  use AgSysKinds,               only : r8
+  use AgSysConstants,           only : crop_type_wheat
+  use AgSysCropTypeGeneric,     only : agsys_crop_type_generic
+  use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
+  use AgSysPhases,              only : composite_phase_type
+  use AgSysPhases,              only : phase_type_generic, phase_type_germinating, phase_type_emerging, &
+                                       phase_type_photo_sensitive, phase_type_inductive, &
+                                       phase_type_leaf_appearance, phase_type_node_number
+  use AgSysPhases,              only : composite_phase_type_vernalization, composite_phase_type_emerge_to_end_of_juvenile
+  use AgSysRoot,                only : agsys_soil_condition_type
+  use AgSysUtils,               only : response_curve_type, temp_3hourly, interpolation, bound, divide, reals_are_equal
+  use AgSysExcepUtils,          only : iulog, endrun 
 
   implicit none
 contains
   !---------------------------------------------------------------
   !Some subroutines
   !
-  subroutine AgSysRunPhenology(crop, env, &
-                               sw_avail_ratio, pesw_seedlayer, &
+  subroutine AgSysRunPhenology(crop, env, soil_cond, &
                                days_after_sowing, current_stage, days_in_phase, tt_in_phase, &
                                days_after_phase, tt_after_phase, phase_target_tt, cumvd)
 
@@ -29,15 +29,11 @@ contains
     !!---------------------------------------------------------
     !!INPUTS: time constant parameters
     class(agsys_crop_type_generic), intent(in) :: crop
-    type (agsys_env_inputs_type),   intent(in) :: env
-
+    
     !!INPUTS: time varying forcing variables from hosting land model
-    real(r8), intent(in) :: photoperiod     !!photoperiod=day length [h]
-    real(r8), intent(in) :: tmax            !!daily maximum air temperature [K]
-    real(r8), intent(in) :: tmin            !!daily minimum air temperature [K]
-    real(r8), intent(in) :: tc              !!daily mean canopy temperature [K]
-    real(r8), intent(in) :: sw_avail_ratio  !!soil water available ratio, can be calculated from soil water profile [-]
-    real(r8), intent(in) :: pesw_seedlayer        
+    type (agsys_environmental_inputs_type),   intent(in) :: env
+    type (agsys_soil_condition_type),         intent(in) :: soil_cond
+    
     !!OUTPUTS: state variables
     integer,  intent(inout) :: days_after_sowing  !!days after sowing, this is an accumulated number since sowing
     real(r8), intent(inout) :: current_stage      !!current stage number
@@ -61,11 +57,8 @@ contains
     real(r8) :: tt
     real(r8) :: dltStage
     real(r8) :: new_stage
-    real(r8) :: swdef_phenol
-    real(r8) :: nfact_phenol
-    real(r8) :: pfact_phenol
-    real(r8) :: photop_eff
-    real(r8) :: vern_eff
+    real(r8) :: photop_eff  !TODO(pb, 2019-11-14) can be removed
+    real(r8) :: vern_eff    !TODO(pb, 2019-11-14) can be removed
 
     real(r8) :: stage_index_devel
     real(r8) :: stage_index_new
@@ -105,15 +98,14 @@ contains
 
     !!!!
 
-    tt=get_daily_tt(tmax, tmin, crop%rc_tair_tt)
+    tt=get_daily_tt(env%tair_max, env%tair_min, crop%rc_tair_tt)
     select case (crop%phases%phase_type(current_stage_index))
       case(phase_type_generic)
-        swdef_phenol=get_swdef_phenol(sw_avail_ratio, crop%rc_sw_avail_phenol)
-        call AgSysRunGenericPhase(crop = crop, 
+        call AgSysRunGenericPhase(crop = crop, & 
                                   current_stage_index = current_stage_index, &
                                   das = days_after_sowing, & 
                                   tt = tt, &
-                                  swdef_phenol = swdef_phenol, &
+                                  swdef_phenol = soil_cond%swdef_phenol, &
                                   phase_tt = tt_in_phase(current_stage_index), &
                                   phase_target_tt = phase_target_tt(current_stage_index), &
                                   dlt_tt_phenol = dlt_tt_phenol, &
@@ -124,7 +116,7 @@ contains
                                       current_stage_index = current_stage_index, &
                                       das = days_after_sowing, &
                                       tt = tt, &
-                                      pesw_seedlayer = pesw_seedlayer, &
+                                      pesw_seedlayer = soil_cond%pesw_seedlayer, &
                                       dlt_tt_phenol = dlt_tt_phenol, &
                                       phase_devel = phase_devel)
       case(phase_type_emerging)
@@ -134,38 +126,34 @@ contains
                                    das = days_after_sowing, &
                                    tt = tt, &
                                    cumvd = cumvd, &
-                                   sw_avail_ratio = sw_avail_ratio, &
+                                   sw_avail_ratio = soil_cond%sw_avail_ratio, &
                                    phase_tt = tt_in_phase(current_stage_index), &
                                    phase_target_tt = phase_target_tt(current_stage_index), &
                                    dlt_tt_phenol = dlt_tt_phenol, &
                                    phase_devel = phase_devel, &
                                    stress_phenol = stress_phenol)
-      case(phase_type_photosensitive)
-        swdef_phenol=get_swdef_phenol(sw_avail_ratio, crop%rc_sw_avail_phenol)
+      case(phase_type_photo_sensitive)
         call AgSysRunPhotoPhase(crop = crop, &
                                 env  = env, &
                                 current_stage_index = current_stage_index, & 
                                 das = days_after_sowing, &
                                 tt = tt, &
-                                swdef_phenol = swdef_phenol, &
+                                swdef_phenol = soil_cond%swdef_phenol, &
                                 phase_tt = tt_in_phase(current_stage_index), &
                                 phase_target_tt = phase_target_tt(current_stage_index), &
                                 dlt_tt_phenol = dlt_tt_phenol, &
                                 phase_devel = phase_devel, &
                                 stress_phenol = stress_phenol)
       case(phase_type_inductive)
-        swdef_phenol=get_swdef_phenol(sw_avail_ratio, crop%rc_sw_avail_phenol)
-        nfact_phenol=get_nfact_phenol()
-        pfact_phenol=get_pfact_phenol()
         call AgSysRunInductivePhase(crop = crop, &
-                                    env = env &
+                                    env = env, &
                                     current_stage_index = current_stage_index, &
                                     das = days_after_sowing, &
                                     tt = tt, &
                                     cumvd = cumvd, &
-                                    swdef_phenol = swdef_phenol, &
-                                    nfact_phenol = nfact_phenol, &
-                                    pfact_phenol = pfact_phenol, &
+                                    swdef_phenol = soil_cond%swdef_phenol, &
+                                    nfact_phenol = soil_cond%nfact_phenol, &
+                                    pfact_phenol = soil_cond%pfact_phenol, &
                                     phase_tt = tt_in_phase(current_stage_index), &
                                     phase_target_tt = phase_target_tt(current_stage_index), &
                                     dlt_tt_phenol = dlt_tt_phenol, &
@@ -186,7 +174,7 @@ contains
       if (stage_index_devel >= 1.0_r8) then
         stage_index_new = int(current_stage + min (1.0_r8, dltStage))
         if (stage_index_new >= crop%phases%num_phases) then
-          write(iulog, *) "The phenology in ", croptype, " has tried to move to phase number ", stage_index_new,& 
+          write(iulog, *) "The phenology in ", crop%croptype, " has tried to move to phase number ", stage_index_new,& 
                           " but there aren't that many phases in the model."
           call endrun(msg="stage_index_new is larger than the total stage number of this crop!")
         end if
@@ -239,9 +227,9 @@ contains
     target_tt=shoot_lag+sowing_depth*shoot_rate
   end subroutine initialize_on_sowing
 
-  subroutine AgSysRunPhase(crop, curent_stage_index, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
+  subroutine AgSysRunPhase(crop, current_stage_index, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
     class(agsys_crop_type_generic), intent(in) :: crop
-    integer, intent(in) :: currents_stage_index
+    integer, intent(in) :: current_stage_index
     integer, intent(in) :: das        !! days after sowing
     real(r8), intent(in):: tt
     real(r8), intent(in):: phase_tt
@@ -265,7 +253,7 @@ contains
 
   subroutine AgSysRunGerminatingPhase(crop, current_stage_index, das, tt, pesw_seedlayer, dlt_tt_phenol, phase_devel)
     class(agsys_crop_type_generic), intent(in) :: crop
-    integer,  intent(in) :: currents_stage_index
+    integer,  intent(in) :: current_stage_index
     integer,  intent(in) :: das             !! days after sowing
     real(r8), intent(in) :: tt
     real(r8), intent(in) :: pesw_seedlayer  !! plant extratable soil water in the seeding layer
@@ -281,7 +269,7 @@ contains
     else
        !! can't germinate on same day as sowing, because we would miss out on
        !! day of sowing elsewhere.
-       if ((das > 0) .and. (pesw_seedlayer>crop%pesw_germ)) then
+       if ((das > 0) .and. (pesw_seedlayer>crop%p_pesw_germ)) then
           phase_devel = 1.999_r8
        else
           phase_devel = 0.999_r8
@@ -294,9 +282,9 @@ contains
                                    sw_avail_ratio, &
                                    phase_tt, phase_target_tt, &
                                    dlt_tt_phenol, phase_devel, stress_phenol)
-    class(agsys_crop_type_generic), intent(in) :: crop
-    type(agsys_env_inputs_type), intent(in)    :: env
-    integer,  intent(in) :: currents_stage_index
+    class(agsys_crop_type_generic),           intent(in) :: crop
+    type (agsys_environmental_inputs_type),   intent(in) :: env
+    integer,  intent(in) :: current_stage_index
     integer,  intent(in) :: das        !! days after sowing
     real(r8), intent(in) :: tt
     real(r8), intent(in) :: cumvd
@@ -315,9 +303,9 @@ contains
                                 swdef_phenol, &
                                 phase_tt, phase_target_tt, &
                                 dlt_tt_phenol, phase_devel, stress_phenol)
-    class(agsys_crop_type_generic), intent(in) :: crop
-    type(agsys_env_inputs_type), intent(in)    :: env
-    integer,  intent(in) :: currents_stage_index
+    class(agsys_crop_type_generic),        intent(in) :: crop
+    type(agsys_environmental_inputs_type), intent(in) :: env
+    integer,  intent(in) :: current_stage_index
     integer,  intent(in) :: das        !! days after sowing
     real(r8), intent(in) :: tt
     real(r8), intent(in) :: swdef_phenol 
@@ -337,7 +325,7 @@ contains
                                   phase_tt, phase_target_tt, &
                                   dlt_tt_phenol, phase_devel, stress_phenol)
     class(agsys_crop_type_generic), intent(in) :: crop
-    integer,  intent(in) :: currents_stage_index
+    integer,  intent(in) :: current_stage_index
     integer,  intent(in) :: das        !! days after sowing
     real(r8), intent(in) :: tt
     real(r8), intent(in) :: swdef_phenol
@@ -354,10 +342,10 @@ contains
                                     swdef_phenol, nfact_phenol, pfact_phenol, &
                                     phase_tt, phase_target_tt, &
                                     dlt_tt_phenol, phase_devel, stress_phenol)
-    class(agsys_crop_type_generic), intent(in) :: crop
-    class(agsys_env_inputs_type),   intent(in) :: env
-    integer,  intent(in) :: currents_stage_index
-    integer,  intent(in)  :: das        !! days after sowing
+    class(agsys_crop_type_generic),          intent(in) :: crop
+    type(agsys_environmental_inputs_type),   intent(in) :: env
+    integer,  intent(in) :: current_stage_index
+    integer,  intent(in) :: das        !! days after sowing
     real(r8), intent(in) :: tt
     real(r8), intent(in) :: cumvd
     real(r8), intent(in) :: swdef_phenol

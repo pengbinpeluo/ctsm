@@ -32,6 +32,7 @@ contains
     !
     ! !ARGUMENTS:
     type(agsys_cultivars_of_crop_type), intent(inout) :: crops(:)
+    class(agsys_crop_type_generic), allocatable :: cultivar
     !
     ! !LOCAL VARIABLES:
 
@@ -40,13 +41,13 @@ contains
 
     SHR_ASSERT_FL((size(crops) == crop_type_maxval), sourcefile, __LINE__)
 
-    allocate(agsys_crop_type_photosensitive :: crops(crop_type_maize)%cultivar(1))
+    allocate(agsys_crop_type_photosensitive :: crops(crop_type_maize)%cultivars(1))
     
     !!currently we hard-coded parameters for one maize cultivar (Pioneer_P04612XR_106)
     !!check the parameter values in the Maize.xml of APSIM
     !!http://apsrunet.apsim.info/websvn/filedetails.php?repname=apsim&path=%2Ftrunk%2FModel%2FMaize.xml
     !!TODO(pb, 2019-11-14) read parameters from files
-    associate(cultivar => crops(crop_type_maize)%cultivar(1))
+    associate(cultivar => crops(crop_type_maize)%cultivars(1))
       ! can access params like this:
       ! cultivar_params%shoot_lag
       call cultivar%init()

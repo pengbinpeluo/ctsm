@@ -17,11 +17,13 @@ module AgSysInterface
   use TemperatureType, only : temperature_type
   use AgSysConstants, only : crop_type_maxval, crop_type_not_handled
   use AgSysType, only : agsys_type
-  use AgSysParams, only : agsys_crop_cultivar_params_type
   use AgSysPhases, only : agsys_phases_type
-  use AgSysParamReader, only : ReadParams, ReadPhases
+  use AgSysParamReader, only : ReadParams
   use AgSysRuntimeConstants, only : InitRuntimeConstants
   use AgSysPlaceholder, only : DoTimeStep_Phenology_Placeholder
+  use AgSysCropTypeGeneric, only : agsys_cultivars_of_crop_type
+  use AgSysRoot, only : get_soil_condition
+  use AgSysPhenology, only : AgSysRunPhenology
   !
   implicit none
   private
@@ -83,8 +85,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: fp, p, g, c
-    integer :: crop_type  ! AgSys's crop type for this patch
-    integer :: cultivar   ! AgSys's cultivar type for this patch
+    integer :: crop_type       ! AgSys's crop type for this patch
+    integer :: cultivar_type   ! AgSys's cultivar type for this patch
     real(r8) :: sw_avail_ratio
     real(r8) :: pesw_seedlayer
 
@@ -116,12 +118,21 @@ contains
                   tc_24hr        = temperature_inst%t_veg24_patch(p), &
                   h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
-             call DoTimeStep_Phenology_Placeholder( &
+             call get_soil_condition( &
+                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                  env       = this%agsys_inst%agsys_environmental_inputs, &
+                  soil_prop = this%agsys_inst%agsys_soil_properties, &
+                  root      = this%agsys_inst%agsys_root_properties, &
+                  soil_cond  = this%agsys_inst%agsys_soil_condition)
+                  
+             !call DoTimeStep_Phenology_Placeholder( &
+             call AgSysRunPhenology ( &
                   ! Inputs, time-constant
-                  crop            = this%crops(crop_type)%cultivars(cultivar_type), &
+                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
 
                   ! Inputs, time-varying
-                  agsys_environmental_inputs = this%agsys_inst%agsys_environmental_inputs, &
+                  env       = this%agsys_inst%agsys_environmental_inputs, &
+                  soil_cond = this%agsys_inst%agsys_soil_condition, &
 
                   ! Outputs
                   days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
@@ -130,6 +141,7 @@ contains
                   tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
                   days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
                   tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
+                  phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
                   cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
 
           end if
@@ -158,9 +170,8 @@ contains
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
-    call ReadParams(this%crop_cultivar_params)
-    call ReadPhases(this%crop_phases)
-    call InitRuntimeConstants(this%crop_phases)
+    call ReadParams(this%crops)
+    !call InitRuntimeConstants(this%crops)
     call this%agsys_inst%Init(bounds, patch)
 
   end subroutine Init

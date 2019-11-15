@@ -14,9 +14,10 @@ module AgSysType
   use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
   use histFileMod      , only : hist_addfld1d, hist_addfld2d
   use PatchType        , only : patch_type
-  use AgSysRuntimeConstants, only : agsys_max_phases
-  use AgSysConstants, only : crop_type_not_handled, crop_type_maize
+  use AgSysRuntimeConstants,    only : agsys_max_phases
+  use AgSysConstants,           only : crop_type_not_handled, crop_type_maize
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
+  use AgSysRoot,                only : agsys_soil_property_type, agsys_soil_condition_type, agsys_root_type     
   !
   implicit none
   private
@@ -79,7 +80,7 @@ module AgSysType
      real(r8), pointer, public :: acc_emerged_thermal_time_patch(:)  ! accumulated thermal time since emergence (deg-days)
      real(r8), pointer, public :: acc_thermal_time_in_phase_patch(:,:) ! accumulated thermal time in each phase (deg-days) [patch, phase]
      real(r8), pointer, public :: acc_thermal_time_after_phase_patch(:,:) ! accumulated thermal time after each phase (deg-days) [patch, phase]
-
+     real(r8), pointer, public :: phase_target_thermal_time_path(:,:)  !target thermal time to finish a phase (deg-days) [path, phase]
      real(r8), pointer, public :: acc_vernalization_days_patch(:) ! accumulated vernalization days (for crops with vernalization) (unit: days)
 
      real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), just over 1:nlevsoi
@@ -89,7 +90,9 @@ module AgSysType
      ! We store an instance of this so that we only need to allocate memory for it once,
      ! in initialization
      type(agsys_environmental_inputs_type), public :: agsys_environmental_inputs
-
+     type(agsys_soil_property_type),  public :: agsys_soil_properties
+     type(agsys_soil_condition_type), public :: agsys_soil_condition
+     type(agsys_root_type),           public :: agsys_root_properties
    contains
      procedure, public :: Init
      procedure, private :: InitAllocate
