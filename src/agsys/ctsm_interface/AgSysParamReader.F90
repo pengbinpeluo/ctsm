@@ -42,7 +42,7 @@ contains
 
     SHR_ASSERT_FL((size(crops) == crop_type_maxval), sourcefile, __LINE__)
 
-    allocate(agsys_crop_type_photosensitive :: crops(crop_type_maize)%cultivars(1))
+    allocate(agsys_crop_type_maize :: crops(crop_type_maize)%cultivars(1))
     
     !!currently we hard-coded parameters for one maize cultivar (Pioneer_P04612XR_106)
     !!check the parameter values in the Maize.xml of APSIM
