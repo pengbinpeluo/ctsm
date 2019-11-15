@@ -50,6 +50,9 @@ module AgSysType
      ! how far we are from one stage to the next. Before sowing, this is 0.
      real(r8), pointer, public :: current_stage_patch(:)
 
+     ! Whether the crop is currently alive; true in the entire period from sowing to harvest
+     logical, pointer, public :: crop_alive_patch(:)
+
      ! Whether the crop has emerged yet this season
      logical, pointer, public :: emerged_patch(:)
 
@@ -151,6 +154,7 @@ contains
     allocate(this%crop_type_patch(begp:endp)); this%crop_type_patch(:) = 0
     allocate(this%cultivar_patch(begp:endp)); this%cultivar_patch(:) = 0
     allocate(this%current_stage_patch(begp:endp)); this%current_stage_patch(:) = nan
+    allocate(this%crop_alive_patch(begp:endp)); this%crop_alive_patch(:) = .false.
     allocate(this%emerged_patch(begp:endp)); this%emerged_patch(:) = .false.
 
     allocate(this%days_in_phase_patch(begp:endp, 1:agsys_max_phases))
@@ -255,6 +259,7 @@ contains
     end do
 
     this%current_stage_patch(begp:endp) = 0._r8
+    this%crop_alive_patch(begp:endp) = .false.
     this%emerged_patch(begp:endp) = .false.
 
     this%days_in_phase_patch(begp:endp, :) = 0._r8

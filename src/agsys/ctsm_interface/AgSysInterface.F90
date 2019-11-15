@@ -110,37 +110,39 @@ contains
              c = patch%column(p)
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
-             call this%agsys_inst%agsys_environmental_inputs%SetValues( &
-                  photoperiod    = grc%dayl(g), &
-                  tair_max       = temperature_inst%t_ref2m_max_patch(p), &
-                  tair_min       = temperature_inst%t_ref2m_min_patch(p), &
-                  tc_24hr        = temperature_inst%t_veg24_patch(p), &
-                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
+             if (this%agsys_inst%crop_alive_patch(p)) then
+                call this%agsys_inst%agsys_environmental_inputs%SetValues( &
+                     photoperiod    = grc%dayl(g), &
+                     tair_max       = temperature_inst%t_ref2m_max_patch(p), &
+                     tair_min       = temperature_inst%t_ref2m_min_patch(p), &
+                     tc_24hr        = temperature_inst%t_veg24_patch(p), &
+                     h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
-             call get_soil_condition( &
-                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
-                  env       = this%agsys_inst%agsys_environmental_inputs, &
-                  soil_prop = this%agsys_inst%agsys_soil_properties, &
-                  root      = this%agsys_inst%agsys_root_properties, &
-                  soil_cond  = this%agsys_inst%agsys_soil_condition)
-                  
-             call AgSysRunPhenology ( &
-                  ! Inputs, time-constant
-                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                call get_soil_condition( &
+                     crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                     env       = this%agsys_inst%agsys_environmental_inputs, &
+                     soil_prop = this%agsys_inst%agsys_soil_properties, &
+                     root      = this%agsys_inst%agsys_root_properties, &
+                     soil_cond  = this%agsys_inst%agsys_soil_condition)
 
-                  ! Inputs, time-varying
-                  env       = this%agsys_inst%agsys_environmental_inputs, &
-                  soil_cond = this%agsys_inst%agsys_soil_condition, &
-
-                  ! Outputs
-                  days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
-                  current_stage     = this%agsys_inst%current_stage_patch(p), &
-                  days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
-                  tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
-                  days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
-                  tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
-                  phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
-                  cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
+                call AgSysRunPhenology ( &
+                                ! Inputs, time-constant
+                     crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                     
+                                ! Inputs, time-varying
+                     env       = this%agsys_inst%agsys_environmental_inputs, &
+                     soil_cond = this%agsys_inst%agsys_soil_condition, &
+                     
+                                ! Outputs
+                     days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
+                     current_stage     = this%agsys_inst%current_stage_patch(p), &
+                     days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
+                     tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
+                     days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
+                     tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
+                     phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
+                     cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
+             end if
 
           end if
        end do
