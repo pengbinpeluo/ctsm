@@ -24,6 +24,9 @@ module AgSysEnvironmentalInputs
      real(r8), public :: tc_24hr   ! daily mean canopy temperature [K]
      real(r8), allocatable, public :: h2osoi_liq_24hr(:)  ! daily mean soil liquid content for each soil layer [kg m-2]
 
+     ! Private data members
+     integer :: nlevsoi
+
    contains
      procedure, public :: Init       ! Allocate space for this instance (but don't set any values)
      procedure, public :: SetValues  ! Set values for the current point
@@ -50,6 +53,7 @@ contains
     character(len=*), parameter :: subname = 'Init'
     !-----------------------------------------------------------------------
 
+    this%nlevsoi = nlevsoi
     allocate(this%h2osoi_liq_24hr(nlevsoi))
 
   end subroutine Init
@@ -77,7 +81,7 @@ contains
     this%tair_max = tair_max
     this%tair_min = tair_min
     this%tc_24hr = tc_24hr
-    this%h2osoi_liq_24hr(:) = h2osoi_liq_24hr(:)
+    this%h2osoi_liq_24hr(1:this%nlevsoi) = h2osoi_liq_24hr(1:this%nlevsoi)
 
   end subroutine SetValues
 

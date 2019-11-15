@@ -55,6 +55,9 @@ module AgSysInterface
    contains
      procedure, public :: AgSysDriver
      procedure, public :: Init
+     procedure, public :: InitAccBuffer
+     procedure, public :: InitAccVars
+     procedure, public :: UpdateAccVars
   end type agsys_interface_type
 
   character(len=*), parameter, private :: sourcefile = &
@@ -94,14 +97,19 @@ contains
     character(len=*), parameter :: subname = 'AgSysDriver'
     !-----------------------------------------------------------------------
 
-    ! TODO(wjs, 2019-11-08) Do climate stuff. This will involve updating AgSys-specific accumulator fields.
-
     ! Note that 24-hour temperature accumulators (which are needed here) are updated late
     ! in the driver loop, based on end_curr_day. We use beg_curr_day here so that the
     ! phenology routines are called the time step after these temperature accumulators
     ! are updated. (If we used end_curr_day here, we wouldn't have today's updated
     ! temperature accumulators, because the current routine is called before the various
     ! UpdateAccVars calls in the driver loop.)
+    !
+    ! TODO(wjs, 2019-11-15) We might want extra logic here preventing this from running
+    ! if the model has run less than a day total, because various daily averages wouldn't
+    ! be available yet in that case. That might be important if a run starts mid-day, and
+    ! may also be important to avoid weirdness on the first time step of the simulation.
+    ! (Is there a clm time manager routine that lets you check the elapsed time into the
+    ! simulation that we could use for this purpose?)
     if (is_beg_curr_day()) then
        do fp = 1, num_pcropp
           p = filter_pcropp(fp)
@@ -116,7 +124,7 @@ contains
                   photoperiod    = grc%dayl(g), &
                   tair_max       = temperature_inst%t_ref2m_max_patch(p), &
                   tair_min       = temperature_inst%t_ref2m_min_patch(p), &
-                  tc_24hr        = temperature_inst%t_veg24_patch(p), &
+                  tc_24hr        = this%agsys_inst%t_veg24hr_patch(p), &
                   h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
              call DoTimeStep_Phenology_Placeholder( &
@@ -169,5 +177,62 @@ contains
     call this%agsys_inst%Init(bounds, patch)
 
   end subroutine Init
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccBuffer(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize accumulation buffer for all AgSys variables
+    !
+    ! !ARGUMENTS:
+    class(agsys_interface_type), intent(in) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'InitAccBuffer'
+    !-----------------------------------------------------------------------
+
+    call this%agsys_inst%InitAccBuffer(bounds)
+
+  end subroutine InitAccBuffer
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccVars(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize variables that are associated with accumulated fields
+    !
+    ! !ARGUMENTS:
+    class(agsys_interface_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'InitAccVars'
+    !-----------------------------------------------------------------------
+
+    call this%agsys_inst%InitAccVars(bounds)
+
+  end subroutine InitAccVars
+
+  !-----------------------------------------------------------------------
+  subroutine UpdateAccVars(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Update accumulated variables
+    !
+    ! !ARGUMENTS:
+    class(agsys_interface_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'UpdateAccVars'
+    !-----------------------------------------------------------------------
+
+    call this%agsys_inst%UpdateAccVars(bounds)
+
+  end subroutine UpdateAccVars
 
 end module AgSysInterface

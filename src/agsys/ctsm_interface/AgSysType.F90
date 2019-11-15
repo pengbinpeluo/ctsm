@@ -9,10 +9,12 @@ module AgSysType
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
   use decompMod        , only : bounds_type
-  use clm_varpar       , only : nlevsoi
-  use clm_varcon       , only : spval
+  use clm_varpar       , only : nlevgrnd, nlevsoi
+  use clm_varcon       , only : spval, tfrz
   use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
   use histFileMod      , only : hist_addfld1d, hist_addfld2d
+  use clm_time_manager , only : get_nstep
+  use accumulMod       , only : init_accum_field, extract_accum_field, update_accum_field
   use PatchType        , only : patch_type
   use AgSysRuntimeConstants, only : agsys_max_phases
   use AgSysConstants, only : crop_type_not_handled, crop_type_maize
@@ -82,7 +84,12 @@ module AgSysType
 
      real(r8), pointer, public :: acc_vernalization_days_patch(:) ! accumulated vernalization days (for crops with vernalization) (unit: days)
 
-     real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), just over 1:nlevsoi
+     real(r8), pointer, public :: t_veg24hr_patch(:)  ! 24-hour average vegetation (canopy) temperature (K)
+
+     ! TODO(wjs, 2019-11-15) Consider changing this to only be over 1:nlevsoi, rather than
+     ! going all the way up to nlevgrnd. This will require adding handling of variables
+     ! with nlevsoi dimension to the restart file and init_interp multilevel.
+     real(r8), pointer, public :: h2osoi_liq_24hr_col(:,:)  ! 24-hour average h2osoi_liq (kg/m2), over 1:nlevgrnd
 
      integer, pointer, public :: days_after_sowing_patch(:)
 
@@ -95,6 +102,10 @@ module AgSysType
      procedure, private :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
+
+     procedure, public :: InitAccBuffer
+     procedure, public :: InitAccVars
+     procedure, public :: UpdateAccVars
   end type agsys_type
 
   character(len=*), parameter, private :: sourcefile = &
@@ -163,7 +174,8 @@ contains
 
     allocate(this%acc_vernalization_days_patch(begp:endp)); this%acc_vernalization_days_patch(:) = nan
 
-    allocate(this%h2osoi_liq_24hr_col(begc:endc, 1:nlevsoi)); this%h2osoi_liq_24hr_col(:,:) = nan
+    allocate(this%t_veg24hr_patch(begp:endp)); this%t_veg24hr_patch(:) = nan
+    allocate(this%h2osoi_liq_24hr_col(begc:endc, 1:nlevgrnd)); this%h2osoi_liq_24hr_col(:,:) = nan
 
     allocate(this%days_after_sowing_patch(begp:endp))  ; this%days_after_sowing_patch(:) = 0
 
@@ -262,14 +274,107 @@ contains
     this%acc_thermal_time_after_phase_patch(begp:endp, :) = 0._r8
     this%acc_vernalization_days_patch(:) = 0._r8
 
-    ! TODO(wjs, 2019-11-12) We may be able to remove this initialization once we properly
-    ! initialize the accumulator field related to this variable
-    this%h2osoi_liq_24hr_col(begc:endc, :) = 0._r8
-
     this%days_after_sowing_patch(begp:endp) = 0
 
     end associate
 
   end subroutine InitCold
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccBuffer(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize accumulation buffer for all required accumulated fields
+    !
+    ! !ARGUMENTS:
+    class(agsys_type), intent(in) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'InitAccBuffer'
+    !-----------------------------------------------------------------------
+
+    ! TODO(wjs, 2019-11-14) Change these 24-hour accumulators to instead be end-of-day
+    ! daily average accumulation once that is implemented.
+    !
+    ! BUG(wjs, 2019-11-14, ESCOMP/ctsm#839) Waiting on implementation of end-of-day daily
+    ! average accumulation
+
+    ! NOTE(wjs, 2019-11-15) This differs from t_veg24_patch in temperature_type in that
+    ! it uses timeavg rather than runmean interpolation. This name is constrained by the
+    ! current 8-character limit. It stands for AgSys ("AG") vegetation temperature
+    ! ("TVEG"), 24-hour average ("24").
+    call init_accum_field(name='AGTVEG24', units='K', &
+         desc='24hr average of vegetation temperature', accum_type='timeavg', accum_period=-1, &
+         subgrid_type='pft', numlev=1, init_value=0._r8)
+
+    ! NOTE(wjs, 2019-11-15) This name is constrained by the current 8-character limit. It
+    ! stands for AgSys ("AG") h2osoi_liq ("H2OS"), 24-hour average ("24").
+    call init_accum_field(name='AGH2OS24', units='mm H2O', &
+         desc='24hr average of h2osoi_liq', accum_type='timeavg', accum_period=-1, &
+         subgrid_type='column', numlev=nlevgrnd, type2d='levgrnd', init_value=0._r8)
+
+  end subroutine InitAccBuffer
+
+  !-----------------------------------------------------------------------
+  subroutine InitAccVars(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize accumulation variables for this instance
+    !
+    ! BUG(wjs, 2019-11-15, ESCOMP/ctsm#30) This needs to be called from outside a clump
+    ! loop (currently it operates on all elements of the arrays, rather than just
+    ! begp:endp or begc:endc).
+    !
+    ! !ARGUMENTS:
+    class(agsys_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: nstep
+
+    character(len=*), parameter :: subname = 'InitAccVars'
+    !-----------------------------------------------------------------------
+
+    nstep = get_nstep()
+
+    call extract_accum_field('AGTVEG24', this%t_veg24hr_patch, nstep)
+    call extract_accum_field('AGH2OS24', this%h2osoi_liq_24hr_col, nstep)
+
+  end subroutine InitAccVars
+
+  !-----------------------------------------------------------------------
+  subroutine UpdateAccVars(this, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Update accumulation variables for this instance
+    !
+    ! BUG(wjs, 2019-11-15, ESCOMP/ctsm#30) This needs to be called from outside a clump
+    ! loop (currently it operates on all elements of the arrays, rather than just
+    ! begp:endp or begc:endc).
+    !
+    ! !ARGUMENTS:
+    class(agsys_type), intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: nstep
+    integer  :: ier                   ! error status
+    real(r8), pointer :: rbufslp(:)
+    real(r8), pointer :: rbufmlc(:,:)
+
+    character(len=*), parameter :: subname = 'UpdateAccVars'
+    !-----------------------------------------------------------------------
+
+    nstep = get_nstep()
+
+    call update_accum_field('AGTVEG24', this%t_veg24hr_patch, nstep)
+    call extract_accum_field('AGTVEG24', this%t_veg24hr_patch, nstep)
+
+    call update_accum_field('AGH2OS24', this%h2osoi_liq_24hr_col, nstep)
+    call extract_accum_field('AGH2OS24', this%h2osoi_liq_24hr_col, nstep)
+
+  end subroutine UpdateAccVars
 
 end module AgSysType
