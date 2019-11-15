@@ -169,7 +169,7 @@ contains
     !-----------------------------------------------------------------------
 
     call ReadParams(this%crops)
-    !call InitRuntimeConstants(this%crops)
+    call InitRuntimeConstants(this%crops)
     call this%agsys_inst%Init(bounds, patch)
 
   end subroutine Init

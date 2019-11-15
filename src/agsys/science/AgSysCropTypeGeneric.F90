@@ -56,6 +56,9 @@ contains
     this%rc_tair_tt%num_pts = 0
     this%rc_sw_avail_phenol%num_pts = 0
     this%rc_sw_emerg_rate%num_pts = 0
+
+    ! This will be set later, by the specific child class
+    this%phases%num_phases = 0
   end subroutine init
 
   subroutine vernalization(this, env, cumvd)
