@@ -52,7 +52,9 @@ contains
       ! can access params like this:
       ! cultivar_params%shoot_lag
       call cultivar%init()
-      cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put 
+      allocate(cultivar%max_days_from_sowing_to_end_of_phase(11))
+      cultivar%max_days_from_sowing_to_end_of_phase(:) = 0
+      cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put
       ! into a separate structure later [TODO (2019-11-12, pb)]
       cultivar%p_shoot_lag    = 15._r8  ! [degree-days]
       cultivar%p_shoot_rate   = 0.6_r8  ! [degree-days per mm depth]

@@ -167,6 +167,8 @@ contains
     this%acc_thermal_time_in_phase_patch(:,:) = nan
     allocate(this%acc_thermal_time_after_phase_patch(begp:endp, 1:agsys_max_phases))
     this%acc_thermal_time_after_phase_patch(:,:) = nan
+    allocate(this%phase_target_thermal_time_patch(begp:endp, 1:agsys_max_phases))
+    this%phase_target_thermal_time_patch(:,:) = nan
 
     allocate(this%acc_vernalization_days_patch(begp:endp)); this%acc_vernalization_days_patch(:) = nan
 
