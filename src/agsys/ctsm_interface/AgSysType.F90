@@ -249,6 +249,13 @@ contains
        if ( ptype == ntmp_corn .or. ptype == nirrig_tmp_corn .or. &
             ptype == ntrp_corn .or. ptype == nirrig_trp_corn) then
           this%crop_type_patch(p) = crop_type_maize
+
+          ! TODO(wjs, 2019-11-15) For now, for variables output to history file, just
+          ! initialize over the crops that we're handling. Eventually we should
+          ! initialize this for all crops.
+          this%current_stage_patch(p) = 0._r8
+          this%acc_thermal_time_in_phase_patch(p, :) = 0._r8
+
           ! TODO(wjs, 2019-11-12) Handle more crop types here
        else
           this%crop_type_patch(p) = crop_type_not_handled
@@ -260,7 +267,10 @@ contains
        end associate
     end do
 
-    this%current_stage_patch(begp:endp) = 0._r8
+    ! ------------------------------------------------------------------------
+    ! For variables not output to history file, initialize over all points
+    ! ------------------------------------------------------------------------
+
     this%crop_alive_patch(begp:endp) = .false.
     this%emerged_patch(begp:endp) = .false.
 
@@ -268,7 +278,6 @@ contains
     this%days_after_phase_patch(begp:endp, :) = 0._r8
 
     this%acc_emerged_thermal_time_patch(begp:endp) = 0._r8
-    this%acc_thermal_time_in_phase_patch(begp:endp, :) = 0._r8
     this%acc_thermal_time_after_phase_patch(begp:endp, :) = 0._r8
     this%acc_vernalization_days_patch(:) = 0._r8
 
