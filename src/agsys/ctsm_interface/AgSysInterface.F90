@@ -9,7 +9,7 @@ module AgSysInterface
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use clm_time_manager, only : is_beg_curr_day
+  use clm_time_manager, only : is_beg_curr_day, get_curr_calday
   use decompMod, only : bounds_type
   use clm_varpar, only : nlevsoi
   use PatchType, only : patch_type
@@ -20,7 +20,6 @@ module AgSysInterface
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams
   use AgSysRuntimeConstants, only : InitRuntimeConstants
-  use AgSysPlaceholder, only : DoTimeStep_Phenology_Placeholder
   use AgSysCropTypeGeneric, only : agsys_cultivars_of_crop_type
   use AgSysRoot, only : get_soil_condition
   use AgSysPhenology, only : AgSysRunPhenology
@@ -102,6 +101,9 @@ contains
     ! temperature accumulators, because the current routine is called before the various
     ! UpdateAccVars calls in the driver loop.)
     if (is_beg_curr_day()) then
+       call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyConstantValues( &
+            calday = floor(get_curr_calday()))
+
        do fp = 1, num_pcropp
           p = filter_pcropp(fp)
 
@@ -111,38 +113,42 @@ contains
              c = patch%column(p)
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
-             call this%agsys_inst%agsys_environmental_inputs%SetValues( &
-                  photoperiod    = grc%dayl(g), &
-                  tair_max       = temperature_inst%t_ref2m_max_patch(p), &
-                  tair_min       = temperature_inst%t_ref2m_min_patch(p), &
-                  tc_24hr        = temperature_inst%t_veg24_patch(p), &
-                  h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
-             call get_soil_condition( &
-                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
-                  env       = this%agsys_inst%agsys_environmental_inputs, &
-                  soil_prop = this%agsys_inst%agsys_soil_properties, &
-                  root      = this%agsys_inst%agsys_root_properties, &
-                  soil_cond  = this%agsys_inst%agsys_soil_condition)
-                  
-             !call DoTimeStep_Phenology_Placeholder( &
-             call AgSysRunPhenology ( &
-                  ! Inputs, time-constant
-                  crop      = this%crops(crop_type)%cultivars(cultivar_type), &
 
-                  ! Inputs, time-varying
-                  env       = this%agsys_inst%agsys_environmental_inputs, &
-                  soil_cond = this%agsys_inst%agsys_soil_condition, &
+             if (this%agsys_inst%crop_alive_patch(p)) then
+                call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
+                     photoperiod    = grc%dayl(g), &
+                     tair_max       = temperature_inst%t_ref2m_max_patch(p), &
+                     tair_min       = temperature_inst%t_ref2m_min_patch(p), &
+                     tc_24hr        = temperature_inst%t_veg24_patch(p), &
+                     h2osoi_liq_24hr = this%agsys_inst%h2osoi_liq_24hr_col(c, 1:nlevsoi))
 
-                  ! Outputs
-                  days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
-                  current_stage     = this%agsys_inst%current_stage_patch(p), &
-                  days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
-                  tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
-                  days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
-                  tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
-                  phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
-                  cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
+                call get_soil_condition( &
+                     crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                     env       = this%agsys_inst%agsys_environmental_inputs, &
+                     soil_prop = this%agsys_inst%agsys_soil_properties, &
+                     root      = this%agsys_inst%agsys_root_properties, &
+                     soil_cond  = this%agsys_inst%agsys_soil_condition)
+
+                call AgSysRunPhenology ( &
+                     ! Inputs, time-constant
+                     crop      = this%crops(crop_type)%cultivars(cultivar_type), &
+                     
+                     ! Inputs, time-varying
+                     env       = this%agsys_inst%agsys_environmental_inputs, &
+                     soil_cond = this%agsys_inst%agsys_soil_condition, &
+                     
+                     ! Outputs
+                     crop_alive        = this%agsys_inst%crop_alive_patch(p), &
+                     days_after_sowing = this%agsys_inst%days_after_sowing_patch(p), &
+                     current_stage     = this%agsys_inst%current_stage_patch(p), &
+                     days_in_phase     = this%agsys_inst%days_in_phase_patch(p,:), &
+                     tt_in_phase       = this%agsys_inst%acc_thermal_time_in_phase_patch(p,:), &
+                     days_after_phase  = this%agsys_inst%days_after_phase_patch(p,:), &
+                     tt_after_phase    = this%agsys_inst%acc_thermal_time_after_phase_patch(p,:), &
+                     phase_target_tt   = this%agsys_inst%phase_target_thermal_time_path(p,:), &
+                     cumvd             = this%agsys_inst%acc_vernalization_days_patch(p))
+             end if
 
           end if
        end do
@@ -171,7 +177,7 @@ contains
     !-----------------------------------------------------------------------
 
     call ReadParams(this%crops)
-    !call InitRuntimeConstants(this%crops)
+    call InitRuntimeConstants(this%crops)
     call this%agsys_inst%Init(bounds, patch)
 
   end subroutine Init

@@ -18,15 +18,17 @@ module AgSysEnvironmentalInputs
      private
 
      ! Public data members
-     real(r8), public :: photoperiod ! same as day length [h]
-     real(r8), public :: tair_max  ! daily max air temperature [K]
-     real(r8), public :: tair_min  ! daily minimum air temperature [K]
-     real(r8), public :: tc_24hr   ! daily mean canopy temperature [K]
-     real(r8), allocatable, public :: h2osoi_liq_24hr(:)  ! daily mean soil liquid content for each soil layer [kg m-2]
+     integer , public :: calday                          ! calendar day; 1 = Jan 1
+     real(r8), public :: photoperiod                     ! same as day length [h]
+     real(r8), public :: tair_max                        ! daily max air temperature [K]
+     real(r8), public :: tair_min                        ! daily minimum air temperature [K]
+     real(r8), public :: tc_24hr                         ! daily mean canopy temperature [K]
+     real(r8), allocatable, public :: h2osoi_liq_24hr(:) ! daily mean soil liquid content for each soil layer [kg m-2]
 
    contains
      procedure, public :: Init       ! Allocate space for this instance (but don't set any values)
-     procedure, public :: SetValues  ! Set values for the current point
+     procedure, public :: SetSpatiallyConstantValues ! Set spatially-constant values for this time
+     procedure, public :: SetSpatiallyVaryingValues  ! Set values for the current point for this time
   end type agsys_environmental_inputs_type
 
 contains
@@ -38,8 +40,9 @@ contains
     ! Allocate space for this instance (but don't set any values)
     !
     ! This should be called once, in initialization. The purpose of separating this from
-    ! SetValues is so that we can just do the memory allocation once, rather than doing
-    ! this memory allocation repeatedly for every time step and every point.
+    ! SetSpatiallyVaryingValues is so that we can just do the memory allocation once,
+    ! rather than doing this memory allocation repeatedly for every time step and every
+    ! point.
     !
     ! !ARGUMENTS:
     class(agsys_environmental_inputs_type), intent(inout) :: this
@@ -55,7 +58,26 @@ contains
   end subroutine Init
 
   !-----------------------------------------------------------------------
-  subroutine SetValues(this, photoperiod, tair_max, tair_min, tc_24hr, h2osoi_liq_24hr)
+  subroutine SetSpatiallyConstantValues(this, calday)
+    !
+    ! !DESCRIPTION:
+    ! Set spatially-constant values for this time
+    !
+    ! !ARGUMENTS:
+    class(agsys_environmental_inputs_type), intent(inout) :: this
+    integer, intent(in) :: calday  ! calendar day; 1 = Jan 1
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'SetSpatiallyConstantValues'
+    !-----------------------------------------------------------------------
+
+    this%calday = calday
+
+  end subroutine SetSpatiallyConstantValues
+
+  !-----------------------------------------------------------------------
+  subroutine SetSpatiallyVaryingValues(this, photoperiod, tair_max, tair_min, tc_24hr, h2osoi_liq_24hr)
     !
     ! !DESCRIPTION:
     ! Set values for the current point
@@ -70,7 +92,7 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'SetValues'
+    character(len=*), parameter :: subname = 'SetSpatiallyVaryingValues'
     !-----------------------------------------------------------------------
 
     this%photoperiod = photoperiod
@@ -79,6 +101,6 @@ contains
     this%tc_24hr = tc_24hr
     this%h2osoi_liq_24hr(:) = h2osoi_liq_24hr(:)
 
-  end subroutine SetValues
+  end subroutine SetSpatiallyVaryingValues
 
 end module AgSysEnvironmentalInputs

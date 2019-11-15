@@ -16,7 +16,11 @@ module AgSysCropTypePhotoSensitive
 contains
   subroutine init(this)
     class(agsys_crop_type_photosensitive), intent(inout) :: this
-    this%rc_photoperiod_target_tt%num_pts = 0 
+
+    ! Initialize the parent class
+    call this%agsys_crop_type_generic%init()
+
+    this%rc_photoperiod_target_tt%num_pts = 0
   end subroutine init
   
   function get_target_tt_photosensitive_phase(this, env) result(target_tt)
