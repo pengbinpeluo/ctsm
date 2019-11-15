@@ -9,7 +9,7 @@ module AgSysInterface
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use clm_time_manager, only : is_beg_curr_day
+  use clm_time_manager, only : is_beg_curr_day, get_curr_calday
   use decompMod, only : bounds_type
   use clm_varpar, only : nlevsoi
   use PatchType, only : patch_type
@@ -101,6 +101,9 @@ contains
     ! temperature accumulators, because the current routine is called before the various
     ! UpdateAccVars calls in the driver loop.)
     if (is_beg_curr_day()) then
+       call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyConstantValues( &
+            calday = floor(get_curr_calday()))
+
        do fp = 1, num_pcropp
           p = filter_pcropp(fp)
 
@@ -111,7 +114,7 @@ contains
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
              if (this%agsys_inst%crop_alive_patch(p)) then
-                call this%agsys_inst%agsys_environmental_inputs%SetValues( &
+                call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
                      photoperiod    = grc%dayl(g), &
                      tair_max       = temperature_inst%t_ref2m_max_patch(p), &
                      tair_min       = temperature_inst%t_ref2m_min_patch(p), &
