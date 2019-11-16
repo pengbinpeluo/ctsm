@@ -1244,6 +1244,10 @@ contains
                temperature_inst%t_ref2m_patch, temperature_inst%t_soisno_col)
        end if
 
+       if (use_crop_agsys) then
+          call agsys_interface_inst%UpdateAccVars(bounds_proc)
+       end if
+
        call t_stopf('accum')
     end if
 

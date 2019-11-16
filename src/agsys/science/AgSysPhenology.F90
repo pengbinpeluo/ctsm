@@ -124,12 +124,14 @@ contains
     current_stage_index = floor(current_stage)
 
     vernalization_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_vernalization)
-    vernalization_cphase = crop%phases%composite_phases(vernalization_index)
-    eme2ej_index         = crop%phases%composite_phase_index_from_type(composite_phase_type_emerge_to_end_of_juvenile)
-    eme2ej_cphase        = crop%phases%composite_phases(eme2ej_index)
+    ! eme2ej_index         = crop%phases%composite_phase_index_from_type(composite_phase_type_emerge_to_end_of_juvenile)
+    ! eme2ej_cphase        = crop%phases%composite_phases(eme2ej_index)
                                        
-    if (any(vernalization_cphase%child_phase_id==floor(current_stage))) then
-      call crop%vernalization(env, cumvd)
+    if (vernalization_index /= 0) then
+       vernalization_cphase = crop%phases%composite_phases(vernalization_index)
+       if (any(vernalization_cphase%child_phase_id==floor(current_stage))) then
+          call crop%vernalization(env, cumvd)
+       end if
     end if
 
     !TODO (pb, 2019-11-14)
