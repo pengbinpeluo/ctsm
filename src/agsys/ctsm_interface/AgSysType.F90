@@ -20,6 +20,8 @@ module AgSysType
   use AgSysConstants,           only : crop_type_not_handled, crop_type_maize
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   use AgSysRoot,                only : agsys_soil_property_type, agsys_soil_condition_type, agsys_root_type     
+  use TemperatureType, only : temperature_type
+  use WaterStateBulkType, only : waterstatebulk_type
   !
   implicit none
   private
@@ -368,7 +370,7 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateAccVars(this, bounds)
+  subroutine UpdateAccVars(this, bounds, temperature_inst, waterstatebulk_inst)
     !
     ! !DESCRIPTION:
     ! Update accumulation variables for this instance
@@ -380,22 +382,26 @@ contains
     ! !ARGUMENTS:
     class(agsys_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(temperature_type), intent(in) :: temperature_inst
+    type(waterstatebulk_type), intent(in) :: waterstatebulk_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: nstep
     integer  :: ier                   ! error status
-    real(r8), pointer :: rbufslp(:)
-    real(r8), pointer :: rbufmlc(:,:)
+    real(r8), pointer :: temp_ptr(:,:)
 
     character(len=*), parameter :: subname = 'UpdateAccVars'
     !-----------------------------------------------------------------------
 
     nstep = get_nstep()
 
-    call update_accum_field('AGTVEG24', this%t_veg24hr_patch, nstep)
+    call update_accum_field('AGTVEG24', temperature_inst%t_veg_patch, nstep)
     call extract_accum_field('AGTVEG24', this%t_veg24hr_patch, nstep)
 
-    call update_accum_field('AGH2OS24', this%h2osoi_liq_24hr_col, nstep)
+    ! Need to use a temporary pointer in order to only include levels from 1:nlevgrnd
+    ! (so, excluding snow levels)
+    temp_ptr(bounds%begc:, 1:) => waterstatebulk_inst%h2osoi_liq_col(:, 1:)
+    call update_accum_field('AGH2OS24', temp_ptr, nstep)
     call extract_accum_field('AGH2OS24', this%h2osoi_liq_24hr_col, nstep)
 
   end subroutine UpdateAccVars
