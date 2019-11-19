@@ -1245,7 +1245,7 @@ contains
        end if
 
        if (use_crop_agsys) then
-          call agsys_interface_inst%UpdateAccVars(bounds_proc)
+          call agsys_interface_inst%UpdateAccVars(bounds_proc, temperature_inst, water_inst%waterstatebulk_inst)
        end if
 
        call t_stopf('accum')

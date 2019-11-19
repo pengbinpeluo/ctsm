@@ -23,6 +23,8 @@ module AgSysInterface
   use AgSysCropTypeGeneric, only : agsys_cultivars_of_crop_type
   use AgSysRoot, only : get_soil_condition
   use AgSysPhenology, only : AgSysDeterminePlanting, AgSysRunPhenology
+  use TemperatureType, only : temperature_type
+  use WaterStateBulkType, only : waterstatebulk_type
   !
   implicit none
   private
@@ -239,7 +241,7 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateAccVars(this, bounds)
+  subroutine UpdateAccVars(this, bounds, temperature_inst, waterstatebulk_inst)
     !
     ! !DESCRIPTION:
     ! Update accumulated variables
@@ -247,13 +249,15 @@ contains
     ! !ARGUMENTS:
     class(agsys_interface_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
+    type(temperature_type), intent(in) :: temperature_inst
+    type(waterstatebulk_type), intent(in) :: waterstatebulk_inst
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'UpdateAccVars'
     !-----------------------------------------------------------------------
 
-    call this%agsys_inst%UpdateAccVars(bounds)
+    call this%agsys_inst%UpdateAccVars(bounds, temperature_inst, waterstatebulk_inst)
 
   end subroutine UpdateAccVars
 
