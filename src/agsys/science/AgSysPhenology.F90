@@ -298,7 +298,8 @@ contains
          phase_devel = 0._r8
       end if
     else
-      phase_devel = bound((phase_tt + dlt_tt_phenol)/phase_target_tt, 0._r8, 1._r8)
+      !!phase_target_tt can sometimes be 0, use divide function here to handle those cases
+      phase_devel = bound(divide(phase_tt + dlt_tt_phenol, phase_target_tt, 0._r8), 0._r8, 1._r8)
     end if
   end subroutine AgSysRunPhase
 
