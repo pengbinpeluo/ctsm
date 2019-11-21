@@ -77,7 +77,7 @@ contains
     type (agsys_soil_condition_type),         intent(in) :: soil_cond
     
     !!OUTPUTS: state variables
-    logical,  intent(inout) :: crop_alive         !!whether the crop is alive (true between planting and sowing)
+    logical,  intent(inout) :: crop_alive         !!whether the crop is alive (true between planting and harvesting)
     integer,  intent(inout) :: days_after_sowing  !!days after sowing, this is an accumulated number since sowing
     real(r8), intent(inout) :: current_stage      !!current stage number
     real(r8), intent(inout) :: days_in_phase(:)   !!days since start of the current phase
@@ -122,6 +122,7 @@ contains
   
     !!!!
     current_stage_index = floor(current_stage)
+    write(*, *) current_stage, current_stage_index, crop_alive
 
     vernalization_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_vernalization)
     ! eme2ej_index         = crop%phases%composite_phase_index_from_type(composite_phase_type_emerge_to_end_of_juvenile)
@@ -215,11 +216,11 @@ contains
     dltStage = new_stage - current_stage
 
     !make sure the index is something we can work with
-    if(current_stage_index >= 0) then
+    if((current_stage_index >= 1) .and. (current_stage_index <= crop%phases%num_phases)) then
       stage_index_devel = current_stage - current_stage_index + dltStage
       if (stage_index_devel >= 1.0_r8) then
         stage_index_new = int(current_stage + min (1.0_r8, dltStage))
-        if (stage_index_new >= crop%phases%num_phases) then
+        if (stage_index_new > (crop%phases%num_phases+1)) then
           write(iulog, *) "The phenology in ", crop%croptype, " has tried to move to phase number ", stage_index_new,& 
                           " but there aren't that many phases in the model."
           call endrun(msg="stage_index_new is larger than the total stage number of this crop!")
@@ -235,9 +236,11 @@ contains
         
         days_in_phase(current_stage_index)=days_in_phase(current_stage_index)+fract_in_old
         tt_in_phase(current_stage_index)=tt_in_phase(current_stage_index)+portion_in_old
-        
-        days_in_phase(stage_index_new)=days_in_phase(stage_index_new)+(1.0_r8-fract_in_old)
-        tt_in_phase(stage_index_new)=tt_in_phase(stage_index_new)+portion_in_new
+       
+        if (stage_index_new <= crop%phases%num_phases) then 
+          days_in_phase(stage_index_new)=days_in_phase(stage_index_new)+(1.0_r8-fract_in_old)
+          tt_in_phase(stage_index_new)=tt_in_phase(stage_index_new)+portion_in_new
+        end if
       else
         days_in_phase(current_stage_index)=days_in_phase(current_stage_index)+1._r8
         tt_in_phase(current_stage_index)=tt_in_phase(current_stage_index)+dlt_tt_phenol
@@ -264,9 +267,9 @@ contains
     if (crop_alive) then
       days_after_sowing=days_after_sowing+1
     end if
-    if (current_stage_index == crop%phases%num_phases+1) then
+    if (current_stage_index == (crop%phases%num_phases+1)) then
       crop_alive = .false.
-    end if 
+    end if
   end subroutine AgSysRunPhenology
 
   subroutine initialize_on_sowing(shoot_lag, shoot_rate, sowing_depth, target_tt)
@@ -299,7 +302,7 @@ contains
       end if
     else
       !!phase_target_tt can sometimes be 0, use divide function here to handle those cases
-      phase_devel = bound(divide(phase_tt + dlt_tt_phenol, phase_target_tt, 0._r8), 0._r8, 1._r8)
+      phase_devel = bound(divide(phase_tt + dlt_tt_phenol, phase_target_tt, 1.999_r8), 0._r8, 1._r8)
     end if
   end subroutine AgSysRunPhase
 
