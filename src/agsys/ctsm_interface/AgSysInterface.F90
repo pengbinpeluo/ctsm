@@ -125,7 +125,7 @@ contains
              cultivar_type = this%agsys_inst%cultivar_patch(p)
 
              call this%agsys_inst%agsys_environmental_inputs%SetSpatiallyVaryingValues( &
-                  photoperiod    = grc%dayl(g), &
+                  day_length     = grc%dayl(g), &
                   tair_max       = temperature_inst%t_ref2m_max_patch(p), &
                   tair_min       = temperature_inst%t_ref2m_min_patch(p), &
                   tc_24hr        = this%agsys_inst%t_veg24hr_patch(p), &

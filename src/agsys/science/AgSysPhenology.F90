@@ -445,8 +445,8 @@ contains
     !!to calculate the daily thermal time
 
     !!ARGUMENTS:
-    real(r8), intent(in):: tmax  !daily maximum air temperature (K)
-    real(r8), intent(in):: tmin  !daily minimum air temperature (K)
+    real(r8), intent(in):: tmax  !daily maximum air temperature (C)
+    real(r8), intent(in):: tmin  !daily minimum air temperature (C)
     type(response_curve_type), intent(in) :: response_curve
 
     integer :: period, period_num
@@ -456,7 +456,7 @@ contains
     period_num=8  !!3-hourly
     do period = 1, period_num
       tmean_3hour = temp_3hourly(tmax, tmin, period)
-      tt = tt + thermal_time(tmean_3hour-273.15_r8, response_curve)
+      tt = tt + thermal_time(tmean_3hour, response_curve)
     end do
     tt=tt/period_num
   end function get_daily_tt

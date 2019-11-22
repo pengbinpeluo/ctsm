@@ -8,6 +8,7 @@ module AgSysEnvironmentalInputs
   !
   ! !USES:
   use AgSysKinds, only : r8
+  use AgSysPhysicalConsts, only : SHR_CONST_TKFRZ, SHR_CONST_SECONDS_PER_HOUR
 
   implicit none
   private
@@ -81,28 +82,28 @@ contains
   end subroutine SetSpatiallyConstantValues
 
   !-----------------------------------------------------------------------
-  subroutine SetSpatiallyVaryingValues(this, photoperiod, tair_max, tair_min, tc_24hr, h2osoi_liq_24hr)
+  subroutine SetSpatiallyVaryingValues(this, day_length, tair_max, tair_min, tc_24hr, h2osoi_liq_24hr)
     !
     ! !DESCRIPTION:
     ! Set values for the current point
     !
     ! !ARGUMENTS:
     class(agsys_environmental_inputs_type), intent(inout) :: this
-    real(r8), intent(in) :: photoperiod ! same as day length [h]
-    real(r8), intent(in) :: tair_max  ! daily max air temperature [K]
-    real(r8), intent(in) :: tair_min  ! daily minimum air temperature [K]
-    real(r8), intent(in) :: tc_24hr   ! daily mean canopy temperature [K]
+    real(r8), intent(in) :: day_length ! day length [seconds]
+    real(r8), intent(in) :: tair_max   ! daily max air temperature [K]
+    real(r8), intent(in) :: tair_min   ! daily minimum air temperature [K]
+    real(r8), intent(in) :: tc_24hr    ! daily mean canopy temperature [K]
     real(r8), intent(in) :: h2osoi_liq_24hr(:)  ! daily mean soil liquid content for each soil layer [kg m-2]
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'SetSpatiallyVaryingValues'
     !-----------------------------------------------------------------------
-
-    this%photoperiod = photoperiod
-    this%tair_max = tair_max
-    this%tair_min = tair_min
-    this%tc_24hr = tc_24hr
+    !we set the variables after changing units for use in AgSys
+    this%photoperiod = day_length/SHR_CONST_SECONDS_PER_HOUR
+    this%tair_max = tair_max-SHR_CONST_TKFRZ
+    this%tair_min = tair_min-SHR_CONST_TKFRZ
+    this%tc_24hr = tc_24hr-SHR_CONST_TKFRZ
     this%h2osoi_liq_24hr(1:this%nlevsoi) = h2osoi_liq_24hr(1:this%nlevsoi)
 
   end subroutine SetSpatiallyVaryingValues
