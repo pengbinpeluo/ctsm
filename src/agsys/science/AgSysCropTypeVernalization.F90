@@ -53,10 +53,10 @@ contains
     stress_phenol=min(swdef_phenol, min(nfact_phenol, pfact_phenol))
   end function get_stress_phenol_inductive_phase
 
-  function get_target_tt_inductive_phase(this, cumvd) result(target_tt)
+  subroutine get_target_tt_inductive_phase(this, cumvd, target_tt)
     class(agsys_crop_type_vernalization), intent(in) :: this
-    real(r8), intent(in) :: cumvd
-    real(r8) :: target_tt
+    real(r8), intent(in)    :: cumvd
+    real(r8), intent(inout) :: target_tt
     target_tt=interpolation(cumvd, this%rc_cumvd_target_tt) 
-  end function get_target_tt_inductive_phase 
+  end subroutine get_target_tt_inductive_phase 
 end module AgSysCropTypeVernalization

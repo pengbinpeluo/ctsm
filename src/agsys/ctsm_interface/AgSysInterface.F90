@@ -15,7 +15,7 @@ module AgSysInterface
   use PatchType, only : patch_type
   use GridcellType, only : gridcell_type
   use TemperatureType, only : temperature_type
-  use AgSysConstants, only : crop_type_maxval, crop_type_not_handled
+  use AgSysConstants, only : crop_type_maxval, crop_type_not_handled, crop_type_maize, crop_type_wheat
   use AgSysType, only : agsys_type
   use AgSysPhases, only : agsys_phases_type
   use AgSysParamReader, only : ReadParams
@@ -118,7 +118,8 @@ contains
           p = filter_pcropp(fp)
 
           crop_type = this%agsys_inst%crop_type_patch(p)
-          if (crop_type /= crop_type_not_handled) then
+          !if (crop_type /= crop_type_not_handled) then
+          if (crop_type == crop_type_wheat) then  !TODO(pb, 2019-11-21) delete this later. Now add this to test one crop type each time
              g = patch%gridcell(p)
              c = patch%column(p)
              cultivar_type = this%agsys_inst%cultivar_patch(p)
@@ -133,6 +134,7 @@ contains
              if (.not. this%agsys_inst%crop_alive_patch(p)) then
                 call AgSysDeterminePlanting( &
                      ! Inputs
+                     crop          = this%crops(crop_type)%cultivars(cultivar_type), &
                      env           = this%agsys_inst%agsys_environmental_inputs, &
                      latdeg        = grc%latdeg(g), &
 

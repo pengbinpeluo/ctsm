@@ -11,7 +11,8 @@ module AgSysParamReader
   use AgSysCropTypeGeneric,         only : agsys_cultivars_of_crop_type, agsys_crop_type_generic
   use AgSysCropTypePhotoSensitive,  only : agsys_crop_type_photosensitive
   use AgSysCropTypeMaize,           only : agsys_crop_type_maize
-  use AgSysConstants,               only : crop_type_maxval, crop_type_maize
+  use AgSysCropTypeWheat,           only : agsys_crop_type_wheat
+  use AgSysConstants,               only : crop_type_maxval, crop_type_maize, crop_type_wheat
   !
   implicit none
   private
@@ -52,7 +53,7 @@ contains
       ! can access params like this:
       ! cultivar_params%shoot_lag
       call cultivar%init()
-      allocate(cultivar%max_days_from_sowing_to_end_of_phase(11))
+      allocate(cultivar%max_days_from_sowing_to_end_of_phase(cultivar%phases%num_phases))
       cultivar%max_days_from_sowing_to_end_of_phase(:) = 0
       cultivar%p_sowing_depth = 50._r8  ! [mm], this is information about management and can be put
       ! into a separate structure later [TODO (2019-11-12, pb)]
@@ -98,12 +99,54 @@ contains
          cultivar%leaf_no_dead_const = -0.025_r8
          cultivar%leaf_no_dead_slope = 0.00035_r8      
       end select
-      end associate
+    end associate
+
+    allocate(agsys_crop_type_wheat :: crops(crop_type_wheat)%cultivars(1))
+    associate(cultivar => crops(crop_type_wheat)%cultivars(1))
+      call cultivar%init()
+      allocate(cultivar%max_days_from_sowing_to_end_of_phase(cultivar%phases%num_phases))
+      cultivar%max_days_from_sowing_to_end_of_phase(:) = 0
+      cultivar%p_sowing_depth = 25._r8  ! [mm], this is information about management and can be put
+      ! into a separate structure later [TODO (2019-11-12, pb)]
+      cultivar%p_shoot_lag    = 40._r8  ! [degree-days]
+      cultivar%p_shoot_rate   = 1.5_r8  ! [degree-days per mm depth]
+      cultivar%p_pesw_germ    = 0._r8   ! soil moisture threshold for seed germination
+
+      cultivar%rc_tair_tt%x=[0._r8, 26._r8, 34._r8]
+      cultivar%rc_tair_tt%y=[0._r8, 26._r8, 0._r8]
+      cultivar%rc_tair_tt%num_pts=3
+
+      cultivar%rc_sw_avail_phenol%x=[0._r8, 0.16_r8]
+      cultivar%rc_sw_avail_phenol%y=[1._r8, 1._r8] !for wheat, this is deactivated
+      cultivar%rc_sw_avail_phenol%num_pts=2
+
+      cultivar%rc_sw_emerg_rate%x=[0._r8, 1._r8]
+      cultivar%rc_sw_emerg_rate%y=[1._r8, 1._r8]   !for wheat, this is deactivated
+      cultivar%rc_sw_emerg_rate%num_pts=2
+      select type(cultivar)
+      class is (agsys_crop_type_photosensitive)
+         cultivar%rc_photoperiod_target_tt%x=[0._r8, 12.5_r8, 20._r8]
+         cultivar%rc_photoperiod_target_tt%y=[0._r8, 0._r8, 0._r8]
+         cultivar%rc_photoperiod_target_tt%num_pts=3
+      end select
+      select type(cultivar)
+      class is (agsys_crop_type_wheat)
+         cultivar%p_photop_sens=3.0_r8
+         cultivar%p_vern_sens=1.5_r8
+         cultivar%p_reqvd=50._r8
+
+         cultivar%target_tt_end_of_juvenile = 400._r8
+         cultivar%target_tt_floral_initiation  = 555._r8
+         cultivar%target_tt_flower = 120._r8
+         cultivar%target_tt_start_grain_fill = 170._r8 !TODO(pb, 2019-11-21) check this value again
+         cultivar%target_tt_start_grain_fill_to_maturity = 580._r8
+      end select
+    end associate
 
       ! TODO(wjs, 2019-11-15) Set other crops / cultivars. For now just initialize to
       ! default values.
       do crop_type = 1, crop_type_maxval
-         if (crop_type /= crop_type_maize) then
+         if ((crop_type /= crop_type_maize) .and. (crop_type /= crop_type_wheat)) then
             allocate(agsys_crop_type_generic :: crops(crop_type)%cultivars(1))
             call crops(crop_type)%cultivars(1)%init()
          end if

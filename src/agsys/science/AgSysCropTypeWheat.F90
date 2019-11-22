@@ -1,5 +1,12 @@
 module AgSysCropTypeWheat
   use AgSysKinds,                  only : r8
+  use AgSysConstants,              only : crop_type_wheat
+  use AgSysPhases,                 only : max_str_len_for_phase_def, &
+                                          phase_type_generic, &
+                                          phase_type_germinating, phase_type_emerging, phase_type_inductive, &
+                                          composite_phase_type, &
+                                          composite_phase_type_vernalization, &
+                                          composite_phase_type_emerge_to_end_of_juvenile
   use AgSysEnvironmentalInputs,    only : agsys_environmental_inputs_type
   use AgSysUtils,                  only : response_curve_type, interpolation, bound
   use AgSysCropTypePhotoSensitive, only : agsys_crop_type_photosensitive
@@ -10,11 +17,18 @@ module AgSysCropTypeWheat
   type, extends(agsys_crop_type_photosensitive), public :: agsys_crop_type_wheat
      private
      !public data members
-     type(response_curve_type), public :: rc_cumvd_target_tt
      real(r8),                  public :: p_photop_sens
      real(r8),                  public :: p_vern_sens
-     real(r8),                  public :: reqvd              !!required vernalization days
+     real(r8),                  public :: p_reqvd              !!required vernalization days
+
+     real(r8),                  public :: target_tt_end_of_juvenile
+     real(r8),                  public :: target_tt_floral_initiation
+     real(r8),                  public :: target_tt_flower
+     real(r8),                  public :: target_tt_start_grain_fill
+     real(r8),                  public :: target_tt_start_grain_fill_to_maturity
   contains
+     procedure :: init
+     procedure :: update_target_tt_for_phases
      procedure :: vernalization     => vernalization_wheat
      procedure :: vern_days         => vern_days_wheat
      procedure :: vern_effect       => vern_effect_wheat
@@ -23,6 +37,76 @@ module AgSysCropTypeWheat
      procedure :: get_stress_phenol_inductive_phase => get_stress_phenol_inductive_phase_wheat
   end type agsys_crop_type_wheat
 contains
+  subroutine init(this)
+    class(agsys_crop_type_wheat), intent(inout) :: this
+
+    ! Initialize the parent class
+    call this%agsys_crop_type_photosensitive%init()
+
+    this%croptype                   = crop_type_wheat
+
+    !!!initialize the parameters
+    !!!TODO(pb, 2019-11-21) now we intialize the variables to 0, 
+    !!!but later can initialize them into nan
+    this%p_photop_sens=0._r8
+    this%p_vern_sens=0._r8
+    this%p_reqvd=0._r8
+   
+    this%target_tt_end_of_juvenile=0._r8
+    this%target_tt_floral_initiation=0._r8
+    this%target_tt_flower=0._r8
+    this%target_tt_start_grain_fill=0._r8
+    this%target_tt_start_grain_fill_to_maturity=0._r8
+
+    !!!initialize the phases
+    this%phases%num_phases=10
+    this%phases%stage_name=[character(len=max_str_len_for_phase_def) :: &
+                                              'sowing', 'germination', 'emergence', 'end_of_juvenile', &
+                                              'floral_initiation', 'flowering', &
+                                              'start_grain_fill', 'end_grain_fill', 'maturity', 'harvest_ripe', 'end_crop']
+    this%phases%phase_name=[character(len=max_str_len_for_phase_def) :: &
+                                              'germinating', 'emerging', 'juvenile', &
+                                              'ej_to_fi', 'fi_to_flower', &
+                                              'flowering_to_grain_filling', 'grain_filling', 'maturing', 'maturity_to_harvest_ripe', 'ready_for_harvesting']
+    this%phases%phase_type=[phase_type_germinating, phase_type_emerging, phase_type_inductive, &
+                            phase_type_inductive, phase_type_inductive, &
+                            phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic, phase_type_generic]
+
+    this%phases%composite_phase_index_from_type=[composite_phase_type_vernalization, composite_phase_type_emerge_to_end_of_juvenile]
+ 
+    allocate(composite_phase_type :: this%phases%composite_phases(2))
+    this%phases%composite_phases(1)%name='vernalization'
+    this%phases%composite_phases(1)%num_child_phases=3
+    this%phases%composite_phases(1)%child_phase_id=[2, 3, 4]
+
+    this%phases%composite_phases(2)%name='eme2ej'
+    this%phases%composite_phases(2)%num_child_phases=2
+    this%phases%composite_phases(2)%child_phase_id=[3, 4]
+  end subroutine init
+
+  subroutine update_target_tt_for_phases (this, env, das, current_stage_index, phase_target_tt)
+    class(agsys_crop_type_wheat),           intent(in) :: this
+    type (agsys_environmental_inputs_type), intent(in) :: env
+    integer,  intent(in)                    :: das
+    integer,  intent(in)                    :: current_stage_index
+    real(r8), intent(inout)                 :: phase_target_tt(:)
+
+    real(r8) :: leaf_no_final
+    real(r8) :: target_tt_emerg_to_flag
+    if ((das == 0) .and. (current_stage_index ==1)) then !!! on sowing, I put two triggers here to make sure it is on sowing date
+      phase_target_tt(1) = 0._r8  !!germination is determined by soil water in seeding layer, not thermal time
+      phase_target_tt(2) = this%p_shoot_lag+this%p_sowing_depth*this%p_shoot_rate
+      phase_target_tt(3) = this%target_tt_end_of_juvenile
+      phase_target_tt(4) = this%target_tt_floral_initiation
+      phase_target_tt(5) = this%target_tt_flower
+      phase_target_tt(6) = this%target_tt_start_grain_fill
+      phase_target_tt(8) = (this%target_tt_flower+this%target_tt_start_grain_fill_to_maturity)*0.05 !!!TODO(pb, 2019-11-21) 0.05 can be a parameter
+      phase_target_tt(7) = this%target_tt_start_grain_fill_to_maturity-phase_target_tt(8)
+      phase_target_tt(9) = 1._r8
+      phase_target_tt(10)= 0._r8
+    end if
+  end subroutine update_target_tt_for_phases
+
   subroutine vernalization_wheat(this, env, cumvd)
     class(agsys_crop_type_wheat),          intent(in)    :: this
     type(agsys_environmental_inputs_type), intent(in)    :: env
@@ -65,10 +149,10 @@ contains
     real(r8) :: reqvd_final
 
     !!default vernalisation requirement is 50 days
-    if (this%reqvd <= 0._r8) then
+    if (this%p_reqvd <= 0._r8) then
       reqvd_final = 50._r8
     else
-      reqvd_final = this%reqvd
+      reqvd_final = this%p_reqvd
     end if
     vern_sens_fac = this%p_vern_sens* 0.0054545_r8 + 0.0003_r8
     vfac = 1.0_r8 - vern_sens_fac * (reqvd_final - cumvd)

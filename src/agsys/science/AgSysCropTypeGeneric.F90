@@ -134,15 +134,15 @@ contains
     call endrun(msg="Illegal call!")
   end function get_target_tt_photosensitive_phase
 
-  function get_target_tt_inductive_phase(this, cumvd) result(target_tt)
+  subroutine get_target_tt_inductive_phase(this, cumvd, target_tt)
     class(agsys_crop_type_generic), intent(in) :: this
-    real(r8), intent(in) :: cumvd
-    real(r8) :: target_tt
+    real(r8), intent(in)    :: cumvd
+    real(r8), intent(inout) :: target_tt
     !do nothing here
     character(len=*), parameter :: subname = 'get_target_tt_inductive_phase'
     write(iulog, *) "This call to ", subname, " is illegal"
     call endrun(msg="Illegal call!")
-  end function get_target_tt_inductive_phase
+  end subroutine get_target_tt_inductive_phase
 
   subroutine update_target_tt_for_phases (this, env, das, current_stage_index, phase_target_tt)
     class(agsys_crop_type_generic),         intent(in) :: this

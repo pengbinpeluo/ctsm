@@ -3,7 +3,7 @@ module AgSysPhenology
   !This module defines some subroutines for crop phenology simulation
   !
   use AgSysKinds,               only : r8
-  use AgSysConstants,           only : crop_type_wheat
+  use AgSysConstants,           only : crop_type_maize, crop_type_wheat
   use AgSysCropTypeGeneric,     only : agsys_crop_type_generic
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   use AgSysPhases,              only : composite_phase_type
@@ -25,7 +25,7 @@ contains
   !---------------------------------------------------------------
   !Some subroutines
   !
-  subroutine AgSysDeterminePlanting(env, latdeg, &
+  subroutine AgSysDeterminePlanting(crop, env, latdeg, &
        crop_alive, current_stage)
     !!---------------------------------------------------------
     !!Determine if it's time to plant; if so, set crop_alive and current_stage
@@ -35,6 +35,8 @@ contains
     !!The logic here assumes this is called once per day, so that there will be a day
     !!that falls exactly on a given threshold value
     !!---------------------------------------------------------
+    !!INPUTS: time constant parameters
+    type (agsys_crop_type_generic), intent(in) :: crop
     !!INPUTS: time varying forcing variables from hosting land model
     type (agsys_environmental_inputs_type),   intent(in) :: env
     real(r8), intent(in) :: latdeg  ! latitude (degrees)
@@ -46,14 +48,26 @@ contains
     logical :: time_to_plant
 
     time_to_plant = .false.
-    if (latdeg >= 0._r8) then
-       if (env%calday == 135) then
+    if (crop%croptype == crop_type_maize) then
+      if (latdeg >= 0._r8) then
+        if (env%calday == 135) then
           time_to_plant = .true.
-       end if
-    else
-       if (env%calday == 318) then
+        end if
+      else
+        if (env%calday == 318) then
           time_to_plant = .true.
-       end if
+        end if
+      end if
+    else if (crop%croptype == crop_type_wheat) then
+      if (latdeg >= 0._r8) then
+        if (env%calday == 318) then
+          time_to_plant = .true.
+        end if
+      else
+        if (env%calday == 135) then
+          time_to_plant = .true.
+        end if
+      end if
     end if
 
     if (time_to_plant) then
@@ -413,7 +427,7 @@ contains
     real(r8), intent(inout) :: stress_phenol
   
     stress_phenol=crop%get_stress_phenol_inductive_phase(env, cumvd, swdef_phenol, nfact_phenol, pfact_phenol)
-    phase_target_tt=crop%get_target_tt_inductive_phase(cumvd)
+    call crop%get_target_tt_inductive_phase(cumvd, phase_target_tt)
     call AgSysRunPhase(crop, current_stage_index, das, tt, phase_target_tt, phase_tt, dlt_tt_phenol, phase_devel, stress_phenol)
   end subroutine AgSysRunInductivePhase
 

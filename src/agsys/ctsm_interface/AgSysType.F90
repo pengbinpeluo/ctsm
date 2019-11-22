@@ -11,13 +11,14 @@ module AgSysType
   use decompMod        , only : bounds_type
   use clm_varpar       , only : nlevgrnd, nlevsoi
   use clm_varcon       , only : spval, tfrz
-  use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn
+  use pftconMod        , only : ntmp_corn, nirrig_tmp_corn, ntrp_corn, nirrig_trp_corn, &
+                                nswheat, nirrig_swheat, nwwheat, nirrig_wwheat
   use histFileMod      , only : hist_addfld1d, hist_addfld2d
   use clm_time_manager , only : get_nstep
   use accumulMod       , only : init_accum_field, extract_accum_field, update_accum_field
   use PatchType        , only : patch_type
   use AgSysRuntimeConstants,    only : agsys_max_phases
-  use AgSysConstants,           only : crop_type_not_handled, crop_type_maize
+  use AgSysConstants,           only : crop_type_not_handled, crop_type_maize, crop_type_wheat
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   use AgSysRoot,                only : agsys_soil_property_type, agsys_soil_condition_type, agsys_root_type     
   use TemperatureType, only : temperature_type
@@ -269,7 +270,11 @@ contains
           ! initialize these for all crops.
           this%current_stage_patch(p) = 0._r8
           this%acc_thermal_time_in_phase_patch(p, :) = 0._r8
-
+       else if ( ptype == nswheat .or. ptype == nirrig_swheat .or. &
+                 ptype == nwwheat .or. ptype == nirrig_wwheat) then
+          this%crop_type_patch(p) = crop_type_wheat
+          this%current_stage_patch(p) = 0._r8
+          this%acc_thermal_time_in_phase_patch(p, :) = 0._r8
           ! TODO(wjs, 2019-11-12) Handle more crop types here
        else
           this%crop_type_patch(p) = crop_type_not_handled
