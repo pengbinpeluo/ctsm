@@ -110,8 +110,8 @@ contains
     real(r8) :: stress_phenol
     !do nothing here
     character(len=*), parameter :: subname = 'get_stress_phenol_inductive_phase'
-    write(iulog, *) "This call to ", subname, " is illegal"
-    call endrun(msg="Illegal call!")
+    !write(iulog, *) "This call to ", subname, " is illegal"
+    !call endrun(msg="Illegal call!")
   end function get_stress_phenol_inductive_phase
 
   function get_stress_phenol_emerging_phase(this, env, cumvd, sw_avail_ratio) result(stress_phenol)
@@ -130,8 +130,8 @@ contains
     real(r8) :: target_tt
     !do nothing here
     character(len=*), parameter :: subname = 'get_target_tt_photosensitive_phase'
-    write(iulog, *) "This call to ", subname, " is illegal"
-    call endrun(msg="Illegal call!")
+    !write(iulog, *) "This call to ", subname, " is illegal"
+    !call endrun(msg="Illegal call!")
   end function get_target_tt_photosensitive_phase
 
   subroutine get_target_tt_inductive_phase(this, cumvd, target_tt)
@@ -140,8 +140,8 @@ contains
     real(r8), intent(inout) :: target_tt
     !do nothing here
     character(len=*), parameter :: subname = 'get_target_tt_inductive_phase'
-    write(iulog, *) "This call to ", subname, " is illegal"
-    call endrun(msg="Illegal call!")
+    !write(iulog, *) "This call to ", subname, " is illegal"
+    !call endrun(msg="Illegal call!")
   end subroutine get_target_tt_inductive_phase
 
   subroutine update_target_tt_for_phases (this, env, das, current_stage_index, phase_target_tt)
