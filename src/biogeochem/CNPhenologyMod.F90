@@ -1932,11 +1932,7 @@ contains
             ! enter phase 2 onset for one time step:
             ! transfer seed carbon to leaf emergence
 
-            if (peaklai(p) >= 1) then
-               hui(p) = max(hui(p),huigrain(p))
-            endif
-
-            if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p) .and. idpp < mxmat(ivt(p))) then
+            if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p) .and. peaklai(p)<1 .and. idpp < mxmat(ivt(p))) then
                cphase(p) = 2._r8
                if (abs(onset_counter(p)) > 1.e-6_r8) then
                   onset_flag(p)    = 1._r8
@@ -1994,7 +1990,7 @@ contains
                ! AgroIBIS uses a complex formula for lai decline.
                ! Use CN's simple formula at least as a place holder (slevis)
 
-            else if (hui(p) >= huigrain(p)) then
+            else if (hui(p) >= huigrain(p) .or. peaklai(p)>=1) then
                cphase(p) = 3._r8
                bglfr(p) = 1._r8/(leaf_long(ivt(p))*dayspyr*secspday)
             end if
