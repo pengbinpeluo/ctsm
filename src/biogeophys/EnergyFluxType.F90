@@ -629,11 +629,9 @@ contains
          ptr_patch=this%tauy_patch)
 
     this%btran_patch(begp:endp) = spval
-    if (.not. use_hydrstress) then
-       call hist_addfld1d (fname='BTRAN', units='unitless',  &
-            avgflag='A', long_name='transpiration beta factor', &
-            ptr_patch=this%btran_patch, l2g_scale_type='veg')
-    end if
+    call hist_addfld1d (fname='BTRAN', units='unitless',  &
+         avgflag='A', long_name='transpiration beta factor', &
+         ptr_patch=this%btran_patch, l2g_scale_type='veg')
 
     this%btran_min_patch(begp:endp) = spval
     call hist_addfld1d (fname='BTRANMN', units='unitless',  &
