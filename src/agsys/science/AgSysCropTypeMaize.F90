@@ -99,7 +99,7 @@ contains
       phase_target_tt(9) = this%target_tt_flower_to_maturity*0.01  !!!TODO(pb, 2019-11-15) 0.01 can be a parameter
       phase_target_tt(8) = this%target_tt_flower_to_maturity-phase_target_tt(7)-phase_target_tt(9)
       phase_target_tt(10)= this%target_tt_maturity_to_ripe
-      phase_target_tt(11)= 0._r8  !!ripe to harvest, this is depend on farmer's behavior
+      phase_target_tt(11)= 0._r8  !!ripe to harvest, this depends on farmer's behavior
     else if ((current_stage_index >=4) .and. (current_stage_index<5)) then  !!photosensitive phase
       phase_target_tt(4) = this%get_target_tt_photosensitive_phase(env)
     

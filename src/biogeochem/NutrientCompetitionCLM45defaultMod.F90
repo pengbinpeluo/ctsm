@@ -302,7 +302,7 @@ contains
 
          if(use_fun)then ! if we are using FUN, we get the N available from there.
             sminn_to_npool(p) = sminn_to_plant_fun(p)
-         else ! no FUN. :( we get N available from the FPG calculation in soilbiogeochemistry competition. 
+         else ! no FUN. :( we get N available from the FPG calculation in soilbiogeochemistry competition.
             sminn_to_npool(p) = plant_ndemand(p) * fpg(c)        
          endif
          
@@ -315,7 +315,7 @@ contains
 	    ! reduce gpp fluxes due to N limitation
 	    if (gpp(p) > 0.0_r8) then
 	       downreg(p) = excess_cflux(p)/gpp(p)
-
+               downreg(p) = 0._r8  !!!NOTE(pb, 2020-01-11) we turn off the nitrogen downregulation here
 	       psnsun_to_cpool(p)   = psnsun_to_cpool(p)  *(1._r8 - downreg(p))
 	       psnshade_to_cpool(p) = psnshade_to_cpool(p)*(1._r8 - downreg(p))
 
