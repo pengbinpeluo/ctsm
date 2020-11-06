@@ -60,22 +60,39 @@ contains
     end if
   end subroutine canopy_expansion_actual
 
-  subroutine canopy_expansion_pot (leaf_no_pot_option, stress_factor, dlt_tt, area_stress_factor)
-    real(r8), intent(in) :: leaf_no_pot_option
-    real(r8), intent(in) :: stress_factor
-    real(r8), intent(in) :: dlt_tt
-    real(r8), intent(in) :: area_stress_factor
+  subroutine canopy_expansion_pot (crop, leaf_no_pot_option,lai_expansion_rate_opiton, &
+                                   current_stage, dlt_tt, photo_period, node_no_now, &
+                                   leaf_no_stress_factor, lai_stress_factor, plant_density, &
+                                   dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node, dlt_lai_pot)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    integer,  intent(in)  :: leaf_no_pot_option
+    integer,  intent(in)  :: lai_expansion_rate_option
+    real(r8), intent(in)  :: current_stage
+    real(r8), intent(in)  :: dlt_tt
+    real(r8), intent(in)  :: photo_period
+    real(r8), intent(in)  :: node_no_now
+    real(r8), intent(in)  :: leaf_no_stress_factor
+    real(r8), intent(in)  :: lai_stress_factor
+    real(r8), intent(in)  :: plant_density
 
-    call leaf_no_pot(leaf_no_pot_option, stress_factor, dlt_tt)
+    real(r8), intent(out) :: dlt_node_no_pot
+    real(r8), intent(out) :: dlt_leaf_no_pot
+    real(r8), intent(out) :: leaves_per_node
+    real(r8), intent(out) :: dlt_lai_pot  
+    real(r8), intent(out) :: dlt_lai_stressed
+
+    call leaf_no_pot(crop, leaf_no_pot_option, current_stage, dlt_tt, photo_period, node_no_now, leaf_no_stress_factor, &
+                     dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
     if (lai_expansion_rate_option == lai_expansion_rate_pp) then
-      call leaf_area_pot_pp()
+      call leaf_area_pot_pp(crop, photo_period, dlt_tt, dlt_lai_pot)
     else if (lai_expansion_rate_option == lai_expansion_rate_default) then
-      call leaf_area_pot()
+      call leaf_area_pot(crop, dlt_leaf_no_pot, node_no_now, plant_density, dlt_lai_pot)
     else
       write(iulog, *) leaf_expansion_rate_option, " is not valid!"
       call endrun(msg="invalid_argument: leaf_expansion_rate_option")
     end if
-    call leaf_area_stressed()
+    
+    dlt_lai_stressed = dlt_lai_pot * lai_stress_factor
   end subroutine canopy_expansion_pot
   
   subroutine leaf_area_pot(crop, dlt_leaf_no_pot, node_no_now, plant_density, dlt_lai_pot)
@@ -100,10 +117,17 @@ contains
     dlt_lai_pot = dlt_tt * lai_rate_photo
   end subroutine leaf_area_potential_pp
 
-  subroutine leaf_no_pot()
+  subroutine leaf_no_pot(crop, leaf_no_pot_option, current_stage, dlt_tt, photo_period, node_no_now, stress_factor, &
+                         dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
     !inout variables
-    integer, intent(in) :: leaf_no_pot_option
-    
+    class(agsys_crop_type_generic), intent(in) :: crop
+    integer,  intent(in)  :: leaf_no_pot_option
+    real(r8), intent(in)  :: current_stage
+    real(r8), intent(in)  :: dlt_tt
+    real(r8), intent(in)  :: photo_period
+    real(r8), intent(in)  :: node_no_now
+    real(r8), intent(in)  :: stress_factor
+
     !output variables
     real(r8), intent(out) :: dlt_leaf_no_pot
     real(r8), intent(out) :: dlt_node_no_pot
@@ -111,13 +135,15 @@ contains
     
     Select case (leaf_no_pot_option)
       case(1)
-        call cproc_leaf_no_pot(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
+        call cproc_leaf_no_pot_1(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
       case(2)
-        call cproc_leaf_no_pot_pp(crop, current_stage, photo_period, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
+        call cproc_leaf_no_pot_2(crop, current_stage, dlt_tt, node_no_now, stress_factor, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
+      case(3)
+        call cproc_leaf_no_pot_3(crop, current_stage, photo_period, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
     end select
   end subroutine leaf_no_pot
 
-  subroutine cproc_leaf_no_pot(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
+  subroutine cproc_leaf_no_pot_1(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in)  :: current_stage
     real(r8), intent(in)  :: dlt_tt
@@ -140,16 +166,60 @@ contains
         leaves_per_node = interpolation(node_no_now, crop%rc_leaves_per_node)
         dlt_leaf_no_pot = dlt_node_no_pot * leaves_per_node
       else
-        dlt_node_no_pot = 0.0
-        dlt_leaf_no_pot = 0.0
+        dlt_node_no_pot = 0._r8
+        dlt_leaf_no_pot = 0._r8
+        leaves_per_node = 0._r8
       end if
     else
-      dlt_node_no_pot = 0.0
-      dlt_leaf_no_pot = 0.0
+      dlt_node_no_pot = 0._r8
+      dlt_leaf_no_pot = 0._r8
+      leaves_per_node = 0._r8
     end if
-  end subroutine cproc_leaf_no_pot
+  end subroutine cproc_leaf_no_pot_1
+
+  subroutine cproc_leaf_no_pot_2(crop, current_stage, dlt_tt, node_no_now, stress_factor, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
+    !this is specifically for wheat
+    !may also work for other crops->combine cproc_leaf_no_pot1 and cproc_leaf_no_pot2???
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in)  :: current_stage
+    real(r8), intent(in)  :: dlt_tt
+    real(r8), intent(in)  :: node_no_now
+    real(r8), intent(in)  :: stress_factor
+    real(r8), intent(out) :: dlt_node_no_pot
+    real(r8), intent(out) :: dlt_leaf_no_pot
+    real(r8), intent(out) :: leaves_per_node
+
+    integer  :: node_formation_index
+    real(r8) :: node_app_rate
+    real(r8) :: leaves_per_node_now
+    real(r8) :: dlt_leaves_per_node
+    type(composite_phase_type) :: node_formation_cphase
+
+    node_formation_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_node_formation)
+    if (node_formation_phase_index /= 0) then
+      node_formation_cphase = crop%phases%composite_phases(node_formation_index)
+      if (any(node_formation_cphase%child_phase_id==floor(current_stage))) then
+        node_app_rate = interpolation(node_no_now, crop%rc_node_app_rate)
+        dlt_node_no_pot = max(dlt_tt/node_app_rate, 0._r8)
+        
+        leaves_per_node_now = interpolation(node_no_now, crop%rc_leaves_per_node)
+        leaves_per_node = min(leaves_per_node, leaves_per_node_now)
+        dlt_leaves_per_node = interpolation(node_no_now + dlt_node_no_pot) - leaves_per_node_now
+        leaves_per_node = leaves_per_node + dlt_leaves_per_node * stress_factor
+        dlt_leaf_no_pot = dlt_node_no_pot * leaves_per_node
+      else
+        dlt_node_no_pot = 0._r8
+        dlt_leaf_no_pot = 0._r8
+        leaves_per_node = 0._r8
+      end if
+    else
+      dlt_node_no_pot = 0._r8
+      dlt_leaf_no_pot = 0._r8
+      leaves_per_node = 0._r8
+    end if
+  end subroutine cproc_leaf_no_pot_2
   
-  subroutine cproc_leaf_no_pot_pp(crop, current_stage, photo_period, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
+  subroutine cproc_leaf_no_pot_3(crop, current_stage, photo_period, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in)  :: current_stage
     real(r8), intent(in)  :: photo_period
@@ -157,13 +227,14 @@ contains
     real(r8), intent(in)  :: node_no_now
     real(r8), intent(out) :: dlt_node_no_pot
     real(r8), intent(out) :: dlt_leaf_no_pot
+    real(r8), intent(out) :: leaves_per_node
 
     integer  :: node_formation_index
     integer  :: pre_photo_phyllochron_index
     integer  :: photo_phyllochron_index
     integer  :: post_phyllochron_index
     real(r8) :: node_app_rate
-    real(r8) :: leaves_per_node
+
     type(composite_phase_type) :: node_formation_cphase
     type(composite_phase_type) :: pre_photo_phyllochron_cphase
     type(composite_phase_type) :: photo_phyllochron_cphase
@@ -176,7 +247,7 @@ contains
         pre_photo_phyllochron_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_pre_photo_phyllochron)
         photo_phyllochron_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_photo_phyllochron)
         post_photo_phyllochron_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_post_photo_phyllochron)
-        node_app_rate=0.0
+        node_app_rate=0._r8
         if ((pre_photo_phyllochron_index /=0) .and. (photo_phyllochron_index /=0) .and. (post_photo_phyllochron_index /=0)) then
           if (any(pre_photo_phyllochron_cphase%child_phase_id==floor(current_stage))) then
             node_app_rate = crop%node_app_rate_pre_photo
@@ -189,18 +260,19 @@ contains
             call endrun(msg="invalid_argument: PhotoPhyllochron phases do not align with NodeFormationPhase!")
           end if
         end if
-        dlt_node_no_pot = max(dlt_tt/node_app_rate, 0.0)
+        dlt_node_no_pot = max(dlt_tt/node_app_rate, 0._r8)
         
         leaves_per_node = interpolation(node_no_now, crop%rc_leaves_per_node)
         dlt_leaf_no_pot = dlt_node_no_pot * leaves_per_node
       else
-        dlt_node_no_pot = 0.0
-        dlt_leaf_no_pot = 0.0
+        dlt_node_no_pot = 0._r8
+        dlt_leaf_no_pot = 0._r8
+        leaves_per_node = 0._r8
       end if
     else
-      dlt_node_no_pot = 0.0
-      dlt_leaf_no_pot = 0.0
+      dlt_node_no_pot = 0._r8
+      dlt_leaf_no_pot = 0._r8
+      leaves_per_node = 0._r8
     end if
-  end subroutine cproc_leaf_no_pot_pp
+  end subroutine cproc_leaf_no_pot_3
 
-end module AgSysLeaf
