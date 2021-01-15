@@ -1,0 +1,150 @@
+module AgSysArbitrator
+  use AgSysKinds,               only : r8
+  use AgSysExcepUtils,          only : iulog, endrun
+  use AgSysUtils,               only : interpolation, reals_are_equal, bound
+contains
+
+  subroutine partition_dm(crop, current_stage, dm_supply, dm_demand, part_dm)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: current_stage
+    real(r8), intent(in) :: dm_supply    !total supply of dry mass
+    real(r8), intent(in) :: dm_demand(:) !dry mass demand from different parts
+    real(r8), intent(inout) :: part_dm(:)
+    real(r8) :: dm_remaining
+    real(r8) :: dlt_dm_tot
+    real(r8) :: uptake
+    real(r8) :: ratio_root_shoot
+    real(r8) :: frac_dm_remaining_in_part
+ 
+    dm_remaining = dm_supply
+    dlt_dm_tot = 0.0
+
+    do i = 1, crop%partition_parts_size
+      if (crop%partition_rules(i) == "magic") then  !!this is for root
+        ratio_root_shoot=interpolation(current_stage, crop%rc_ratio_root_shoot)
+        uptake=ratio_root_shoot/(ratio_root_shoot+1._r8) * dm_supply
+        part_dm(i)=part_dm(i)+uptake
+        dm_remaining=dm_remaining-uptake
+        dlt_dm_tot=dlt_dm_tot+uptake
+      else   !!now dm_remaining is for aboveground (non-root or shoot) part
+        if (crop%partition_rules(i) == "demand") then
+           uptake = min(dm_demand(i), dm_remaining)
+        else if (crop%partition_rules(i) == "frac") then
+           frac_dm_remaining_in_part=interpolation(current_stage, crop%rc_frac_dm_remaining_in_part(i))
+           uptake = min(frac_dm_remaining_in_part * dm_remaining,dm_demand(i))
+        else if (crop%partition_rules(i) == "remainder") then
+           uptake = dm_remaining
+        else
+           write(iulog, *) crop%partition_rules(i), " is not valid!"
+           call endrun(msg="Unknown partition rules: crop%partition_rules")
+        end if
+        part_dm(i)=part_dm(i)+uptake
+        dm_remaining=dm_remaining-uptake
+        dlt_dm_tot=dlt_dm_tot+uptake
+      end if
+    end do
+
+    !!check if the total supply of biomass has been fully allocated
+    if (abs(dlt_dm_tot-dm_Supply)>=1.e-4_r8) then
+      write(iulog, *) "dlt_dm_tot mass balance is off for crop in AgSys!"
+      call endrun(msg="dlt_dm_tot mass balance is off for crop in AgSys!")
+    end if
+  end subroutine partition_dm
+
+  subroutine partition_nitrogen()
+    !===================================================
+    !Calculate the nitrogen partitioning in the plant
+
+    !find the proportion of uptake to be distributed to
+    !each plant part and distribute it.
+    real(r8), intent(in) :: n_uptake_sum !!total plant N uptake (g/m^2)
+    real(r8), intent(in) :: n_demand_sum
+    real(r8), intent(in) :: n_fix_pot
+
+    real(r8) :: dlt_n_tot
+    real(r8) :: n_fix_demand_sum
+    real(r8) :: n_fix_uptake
+    real(r8) :: n_excess
+ 
+    if (reals_are_equal(n_uptake_sum, 0._r8)) then
+      n_uptake_sum = 0._r8
+    end if
+   
+    n_excess = n_uptake_sum - n_demand_sum
+    n_excess = l_bound (n_excess, 0.0)
+    dlt_n_tot=0._r8
+    do i=1, crop%partition_parts_size
+      if (n_excess>0.0) then
+        part_n(i) = part_n(i) + part_n_demand(i)
+        dlt_n_tot = dlt_n_tot + part_n_demand(i)
+        plant_part_fract = divide (part_n_capacity(i), n_capacity_sum, 0.0)
+        part_n(i) = part_n(i) + n_excess * plant_part_fract
+        dlt_n_tot = dlt_n_tot + n_excess * plant_part_fract
+      else
+        plant_part_fract = divide (part_n_demand(i), n_demand_sum, 0.0)
+        part_n(i) = part_n(i) + n_supply * plant_part_fract
+        dlt_n_tot = dlt_n_tot + n_supply * plant_part_fract
+      end if
+    end do
+
+    !Check Mass Balance
+    if (not reals_are_equal(dlt_n_tot - n_uptake_sum, 0._r8)) then
+      write(iulog, *) "dlt_n_tot mass balance is off for crop in AgSys!"
+      call endrun(msg="dlt_n_tot mass balance is off for crop in AgSys!")
+    end if
+
+    !Retranslocate N Fixed
+    n_fix_demand_sum = max (n_demand_sum - n_uptake_sum, 0._r8) ! total demand for N fixation (g/m^2)
+    n_fix_uptake = bound (n_fix_pot, 0.0, n_fix_demand_sum)
+
+    !plant.All().doNFixRetranslocate (n_fix_uptake, n_fix_demand_sum) !come back to this later
+  end subroutine partition_nitrogen
+
+  subroutine retranslocation_dm()
+  !+  Purpose
+  !   Calculate plant dry matter delta's due to retranslocation
+  !   to grain, pod and energy (g/m^2)
+
+
+    real(r8) :: dlt_dm_retrans_part                    !carbohydrate removed from part (g/m^2)
+    real(r8) :: dm_part_avail                          !carbohydrate avail from part(g/m^2)
+    real(r8) :: dm_retranslocate = 0.0
+
+    real(r8) :: demand_differential_begin
+    real(r8) :: demand_differential
+    integer :: i, ip
+    !- Implementation Section ----------------------------------
+
+
+    ! now translocate carbohydrate between plant components
+    ! this is different for each stage
+
+    plant.All().dlt_dm_green_retrans_hack( 0.0 )
+
+    demand_differential_begin = fruitPart->dmDemandDifferential ()   !FIXME - should be returned from a fruitPart method
+    demand_differential = demand_differential_begin
+
+    ! get available carbohydrate from supply pools
+    do i =0,num_supply_pools
+      ip=part_id(i)
+      dm_part_avail = dm_retrans_supply(ip)
+      dlt_dm_retrans_part = min (demand_differential, dm_part_avail)
+
+      !assign and accumulate
+      dm_retranslocate = dm_retranslocate + dlt_dm_retrans_part
+      demand_differential = demand_differential - dlt_dm_retrans_part
+    end do
+
+    dlt_dm_retrans_to_fruit = - dm_retranslocate
+
+    fruitPart->doDmRetranslocate (dlt_dm_retrans_to_fruit, demand_differential_begin)
+
+    write(iulog, *) "Arbitrator.FinalRetranslocation=", dm_retranslocate
+  end subroutine retranslocation_dm
+
+  subroutine retransloction_nitrogen()
+
+  end subroutine retranslocation_nitrogen
+
+
+end module AgSysArbitrator

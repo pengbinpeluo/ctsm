@@ -9,19 +9,20 @@ module AgSysLeaf
   integer, parameter, public :: lai_expansion_rate_maxval = 3
 
 contains
-  subroutine canopy_expansion_actual(leaf_expansion_rate_option)
+  subroutine canopy_expansion_actual(crop, leaf_expansion_rate_option, g_lai,&
+                                     dlt_node_no_pot, dlt_leaf_no_pot, dlt_lai_stressed, dlt_leaf_dm, &
+                                     dlt_node_no, dlt_leaf_no, dlt_lai)
     !!------------------------------
     !!determine the actual canopy growth (leaf area, leaf number, and node number) 
     !!using the supply-demand approach
     !!------------------------------
+    class(agsys_crop_type_generic), intent(in) :: crop
     integer, intent(in) :: leaf_expansion_rate_option
-    real(r8), intent(in) :: dlt_lai_stressed
-    real(r8), intent(in) :: dlt_leaf_no_pot
-    real(r8), intent(in) :: dlt_node_no_pot
     real(r8), intent(in) :: g_lai
+    real(r8), intent(in) :: dlt_node_no_pot
+    real(r8), intent(in) :: dlt_leaf_no_pot
+    real(r8), intent(in) :: dlt_lai_stressed
     real(r8), intent(in) :: dlt_leaf_dm
-    type(response_curve_type), intent(in) :: rc_sla_max
-    type(response_curve_type), intent(in) :: rc_leaf_no_frac
 
     real(r8), intent(out) :: dlt_lai
     real(r8), intent(out) :: dlt_leaf_no
@@ -38,7 +39,7 @@ contains
       !!Set actual dlt LAI as "stressed dlt LAI" without SLA constraints
       dlt_lai = dlt_lai_stressed
     else if (lai_expansion_rate_option == lai_expansion_rate_default) then
-      sla_max = interpolation(g_lai, rc_sla_max)  !!calculated daily max spec leaf area
+      sla_max = interpolation(g_lai, crop%rc_sla_max)  !!calculated daily max spec leaf area
       dlt_lai_carbon = dlt_leaf_dm * sla_max * smm2sm !!maximum daily increase in leaf area
       !!index from carbon supply
       dlt_lai = min(dlt_lai_carbon, dlt_lai_stressed)
@@ -49,7 +50,7 @@ contains
 
     !!actual change of leaf number
     lai_ratio=max(dlt_lai/dlt_lai_stressed, 0.0) !!ratio of actual to potential lai
-    leaf_no_frac = interpolation(lai_ratio, rc_leaf_no_frac)  !!ratio of actual to potential leaf appearance
+    leaf_no_frac = interpolation(lai_ratio, crop%rc_leaf_no_frac)  !!ratio of actual to potential leaf appearance
     dlt_leaf_no = dlt_leaf_no_pot * leaf_no_frac
     
     !!actual change of node number
@@ -63,7 +64,7 @@ contains
   subroutine canopy_expansion_pot (crop, leaf_no_pot_option,lai_expansion_rate_opiton, &
                                    current_stage, dlt_tt, photo_period, node_no_now, &
                                    leaf_no_stress_factor, lai_stress_factor, plant_density, &
-                                   dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node, dlt_lai_pot)
+                                   dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node, dlt_lai_pot, dlt_lai_stressed)
     class(agsys_crop_type_generic), intent(in) :: crop
     integer,  intent(in)  :: leaf_no_pot_option
     integer,  intent(in)  :: lai_expansion_rate_option
