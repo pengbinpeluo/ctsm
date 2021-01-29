@@ -4,11 +4,11 @@ module AgSysArbitrator
   use AgSysUtils,               only : interpolation, reals_are_equal, bound
 contains
 
-  subroutine partition_dm(crop, current_stage, dm_supply, dm_demand, part_dm)
+  subroutine partition_dm(crop, current_stage, dm_supply, part_dm_demand, part_dm)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in) :: current_stage
     real(r8), intent(in) :: dm_supply    !total supply of dry mass
-    real(r8), intent(in) :: dm_demand(:) !dry mass demand from different parts
+    real(r8), intent(in) :: part_dm_demand(:) !dry mass demand from different parts
     real(r8), intent(inout) :: part_dm(:)
     real(r8) :: dm_remaining
     real(r8) :: dlt_dm_tot
@@ -28,10 +28,10 @@ contains
         dlt_dm_tot=dlt_dm_tot+uptake
       else   !!now dm_remaining is for aboveground (non-root or shoot) part
         if (crop%partition_rules(i) == "demand") then
-           uptake = min(dm_demand(i), dm_remaining)
+           uptake = min(part_dm_demand(i), dm_remaining)
         else if (crop%partition_rules(i) == "frac") then
            frac_dm_remaining_in_part=interpolation(current_stage, crop%rc_frac_dm_remaining_in_part(i))
-           uptake = min(frac_dm_remaining_in_part * dm_remaining,dm_demand(i))
+           uptake = min(frac_dm_remaining_in_part * dm_remaining,part_dm_demand(i))
         else if (crop%partition_rules(i) == "remainder") then
            uptake = dm_remaining
         else
@@ -57,6 +57,7 @@ contains
 
     !find the proportion of uptake to be distributed to
     !each plant part and distribute it.
+    class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in) :: n_uptake_sum !!total plant N uptake (g/m^2)
     real(r8), intent(in) :: n_fix_pot
     real(r8), intent(in) :: part_n_demand
@@ -73,7 +74,9 @@ contains
     if (reals_are_equal(n_uptake_sum, 0._r8)) then
       n_uptake_sum = 0._r8
     end if
-   
+     
+    !TODO: need to add code to calculate n_demand_sum from part_n_demand(i) here
+    
     n_excess = n_uptake_sum - n_demand_sum
     n_excess = l_bound (n_excess, 0.0)
     dlt_n_tot=0._r8
@@ -107,18 +110,22 @@ contains
     end do
   end subroutine partition_nitrogen
 
-  subroutine retranslocation_dm()
+  subroutine retranslocation_dm(crop, part_dm_demand, part_dm_trans_supply, part_dm)
   !+  Purpose
   !   Calculate plant dry matter delta's due to retranslocation
   !   to grain, pod and energy (g/m^2)
-
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: part_dm_demand(:)
+    real(r8), intent(in) :: part_dm_trans_supply(:)
+    real(r8), intent(inout) :: part_dm(:)
 
     real(r8) :: dlt_dm_retrans_part                    !carbohydrate removed from part (g/m^2)
     real(r8) :: dm_part_avail                          !carbohydrate avail from part(g/m^2)
-    real(r8) :: dm_retranslocate = 0.0
+    real(r8) :: dm_retranslocate
 
-    real(r8) :: demand_differential_begin
-    real(r8) :: demand_differential
+    real(r8) :: dm_demand_differential_begin
+    real(r8) :: dm_demand_differential
+    real(r8) :: frac
     integer :: i, ip
     !- Implementation Section ----------------------------------
 
@@ -126,25 +133,34 @@ contains
     ! now translocate carbohydrate between plant components
     ! this is different for each stage
 
-    plant.All().dlt_dm_green_retrans_hack( 0.0 )
+    !plant.All().dlt_dm_green_retrans_hack( 0.0 )  !TODO: need to come back to this
 
-    demand_differential_begin = fruitPart->dmDemandDifferential ()   !FIXME - should be returned from a fruitPart method
-    demand_differential = demand_differential_begin
-
-    ! get available carbohydrate from supply pools
-    do i =0,num_supply_pools
-      ip=part_id(i)
-      dm_part_avail = dm_retrans_supply(ip)
-      dlt_dm_retrans_part = min (demand_differential, dm_part_avail)
-
-      !assign and accumulate
-      dm_retranslocate = dm_retranslocate + dlt_dm_retrans_part
-      demand_differential = demand_differential - dlt_dm_retrans_part
+    dm_demand_differential_begin=0._r8
+    do i=0, crop%dm_retrans_demand_part_num
+      ip=crop%dm_retrans_demand_part_id(i)
+      part_dm_demand_differential(i)=part_dm(ip)-part_dm_demand(ip)
+      dm_demand_differential_begin=dm_demand_differential_begin+part_dm_demand_differential(i)
     end do
 
-    dlt_dm_retrans_to_fruit = - dm_retranslocate
+    dm_demand_differential=dm_demand_differential_begin
+    dm_retranslocate=0._r8
+    ! get available carbohydrate from supply pools
+    do i =0,crop%dm_retrans_supply_part_num
+      ip=crop%dm_retrans_supply_part_id(i)
+      dm_part_avail = part_dm_retrans_supply(ip)
+      dlt_dm_retrans_part = min (dm_demand_differential, dm_part_avail)
 
-    fruitPart->doDmRetranslocate (dlt_dm_retrans_to_fruit, demand_differential_begin)
+      !assign and accumulate
+      part_dm(ip)=part_dm(ip)-dlt_dm_retrans_part
+      dm_retranslocate = dm_retranslocate + dlt_dm_retrans_part
+      dm_demand_differential = dm_demand_differential - dlt_dm_retrans_part
+    end do
+
+    do i=0, crop%dm_retrans_demand_part_num
+      ip=crop%dm_retrans_demand_part_id(i)
+      frac=part_dm_demand_differential(i)/dm_demand_differential_begin
+      part_dm(ip)=part_dm(ip)+dm_retranslocate*frac
+    end do
 
     write(iulog, *) "Arbitrator.FinalRetranslocation=", dm_retranslocate
   end subroutine retranslocation_dm
