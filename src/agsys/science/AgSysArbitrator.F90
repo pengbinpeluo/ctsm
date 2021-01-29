@@ -51,20 +51,24 @@ contains
     end if
   end subroutine partition_dm
 
-  subroutine partition_nitrogen()
+  subroutine partition_nitrogen(crop, n_uptake_sum, n_fix_pot, part_n_demand, part_n)
     !===================================================
     !Calculate the nitrogen partitioning in the plant
 
     !find the proportion of uptake to be distributed to
     !each plant part and distribute it.
     real(r8), intent(in) :: n_uptake_sum !!total plant N uptake (g/m^2)
-    real(r8), intent(in) :: n_demand_sum
     real(r8), intent(in) :: n_fix_pot
+    real(r8), intent(in) :: part_n_demand
+    real(r8), intent(inout) :: part_n(:)
 
+    real(r8) :: n_demand_sum
+    real(r8) :: n_excess
     real(r8) :: dlt_n_tot
     real(r8) :: n_fix_demand_sum
     real(r8) :: n_fix_uptake
-    real(r8) :: n_excess
+    real(r8) :: part_n_demand_differential
+    real(r8) :: n_demand_differential_sum
  
     if (reals_are_equal(n_uptake_sum, 0._r8)) then
       n_uptake_sum = 0._r8
@@ -75,9 +79,9 @@ contains
     dlt_n_tot=0._r8
     do i=1, crop%partition_parts_size
       if (n_excess>0.0) then
-        part_n(i) = part_n(i) + part_n_demand(i)
+        part_n(i) = part_n(i) + part_n_demand(i) !!first meet the demand
         dlt_n_tot = dlt_n_tot + part_n_demand(i)
-        plant_part_fract = divide (part_n_capacity(i), n_capacity_sum, 0.0)
+        plant_part_fract = divide (part_n_capacity(i), n_capacity_sum, 0.0) !!then allocate the excess nitrogen
         part_n(i) = part_n(i) + n_excess * plant_part_fract
         dlt_n_tot = dlt_n_tot + n_excess * plant_part_fract
       else
@@ -93,11 +97,14 @@ contains
       call endrun(msg="dlt_n_tot mass balance is off for crop in AgSys!")
     end if
 
-    !Retranslocate N Fixed
+    !partition N Fixed
     n_fix_demand_sum = max (n_demand_sum - n_uptake_sum, 0._r8) ! total demand for N fixation (g/m^2)
     n_fix_uptake = bound (n_fix_pot, 0.0, n_fix_demand_sum)
-
-    !plant.All().doNFixRetranslocate (n_fix_uptake, n_fix_demand_sum) !come back to this later
+    n_demand_differential_sum=n_demand_sum-n_sum
+    do i=1, crop%partition_parts_size
+      part_n_demand_differential=part_n(i)-part_n_demand(i)
+      part_n(i)=part_n(i)+n_fix_uptake * divide (part_n_demand_differential, n_demand_differential_sum, 0.0)
+    end do
   end subroutine partition_nitrogen
 
   subroutine retranslocation_dm()
