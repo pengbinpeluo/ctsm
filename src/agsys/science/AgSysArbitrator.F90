@@ -110,7 +110,7 @@ contains
     end do
   end subroutine partition_nitrogen
 
-  subroutine retranslocation_dm(crop, part_dm_demand, part_dm_trans_supply, part_dm)
+  subroutine retranslocate_dm(crop, part_dm_demand, part_dm_trans_supply, part_dm)
   !+  Purpose
   !   Calculate plant dry matter delta's due to retranslocation
   !   to grain, pod and energy (g/m^2)
@@ -163,11 +163,51 @@ contains
     end do
 
     write(iulog, *) "Arbitrator.FinalRetranslocation=", dm_retranslocate
-  end subroutine retranslocation_dm
+  end subroutine retranslocate_dm
 
-  subroutine retransloction_nitrogen()
+  subroutine retranslocte_nitrogen(crop, g_grain_n_demand, part_n)
+  !!this subroutine is only for retranslocate the nitrogen of non-root and non-grain parts (stem, leaves, etc)
+  !!to the grain part 
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: g_grain_n_demand
+    real(r8), intent(inout) :: part_n(:)
+    real(r8) :: available_retranslocate_n(:)
+    real(r8) :: n_supply_for_retranslocate
+    real(r8) :: amount_n_to_retranslocate
+    real(r8) :: amount_n_to_retranslocate_total
+    integer :: i, ip
 
-  end subroutine retranslocation_nitrogen
+    n_supply_for_retranslocate=0._r8
+    do i=0, crop%n_retrans_supply_part_num
+      ip=crop%n_retrans_supply_part_id(i)
+      available_retranslocate_n(ip)=get_available_retranslocate_n(crop, ip)  !!TODO(add this subroutine later, binpeng) 
+      n_supply_for_retranslocate=n_supply_for_retranslocate + available_retranslocate_n(ip)
+    end do
+
+    amount_n_to_retranslocate_total=0._r8
+    do i=0, crop%n_retrans_supply_part_num
+      ip=crop%n_retrans_supply_part_id(i)
+      amount_n_to_retranslocate=0._r8
+      if (g_grain_n_demand >= n_supply_for_retranslocate) then
+        !demand greater than or equal to supply
+        !retranslocate all available N
+        amount_n_to_retranslocate = available_retranslocate_n(ip)
+      else
+        !supply greater than demand
+        !Retranslocate what is needed
+        amount_n_to_retranslocate = g_grain_n_demand * divide (available_retranslocate_n(ip), n_supply_for_retranslocation, 0.0)
+      end if
+      amount_n_to_retranslocate_total=amount_n_to_retranslocate_total + amount_n_to_retranslocate
+
+      !!!reduce from the supply part
+      part_n(ip)=part_n(ip)-amount_n_to_retranslocate
+    end do
+
+    !!!add to grain part
+    ip=crop%n_retrans_demand_part_id
+    part_n(ip)=part_n(ip)+amount_n_to_retranslocate_total
+
+  end subroutine retranslocate_nitrogen
 
 
 end module AgSysArbitrator
