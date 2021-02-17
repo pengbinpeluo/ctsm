@@ -19,7 +19,7 @@ contains
     dm_remaining = dm_supply
     dlt_dm_tot = 0.0
 
-    do i = 1, crop%partition_parts_size
+    do i = 1, crop%partition_part_num
       if (crop%partition_rules(i) == "magic") then  !!this is for root
         ratio_root_shoot=interpolation(current_stage, crop%rc_ratio_root_shoot)
         uptake=ratio_root_shoot/(ratio_root_shoot+1._r8) * dm_supply
@@ -80,7 +80,7 @@ contains
     n_excess = n_uptake_sum - n_demand_sum
     n_excess = l_bound (n_excess, 0.0)
     dlt_n_tot=0._r8
-    do i=1, crop%partition_parts_size
+    do i=1, crop%partition_part_num
       if (n_excess>0.0) then
         part_n(i) = part_n(i) + part_n_demand(i) !!first meet the demand
         dlt_n_tot = dlt_n_tot + part_n_demand(i)
@@ -104,7 +104,7 @@ contains
     n_fix_demand_sum = max (n_demand_sum - n_uptake_sum, 0._r8) ! total demand for N fixation (g/m^2)
     n_fix_uptake = bound (n_fix_pot, 0.0, n_fix_demand_sum)
     n_demand_differential_sum=n_demand_sum-n_sum
-    do i=1, crop%partition_parts_size
+    do i=1, crop%partition_part_num
       part_n_demand_differential=part_n(i)-part_n_demand(i)
       part_n(i)=part_n(i)+n_fix_uptake * divide (part_n_demand_differential, n_demand_differential_sum, 0.0)
     end do
@@ -209,5 +209,20 @@ contains
 
   end subroutine retranslocate_nitrogen
 
+  subroutine retranslocate_senescing_nitrogen(crop, green_n, green_dm, senecscing_dm)
+  !!Derives seneseced plant nitrogen (g N/m^2)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: green_n
+    real(r8), intent(in) :: green_dm
+    real(r8), intent(in) :: senecsing_dm
+
+    do i=0, crop%parttion_part_num
+      green_n_conc=divide (green_n(i), green_dm(i), 0.0)
+      dlt_n_in_senescing_leaf = senescing_dm * green_n_conc
+      sen_n_conc = min (crop%.n_sen_conc(i), green_n_conc)
+      navail = dlt_n_in_senescing_leaf - senescing_dm*sen_n_conc
+      navail = bound(navail, 0.0, n_demand_tot)
+    end do
+  end subroutine retranslocate_senesced_nitrogen
 
 end module AgSysArbitrator
