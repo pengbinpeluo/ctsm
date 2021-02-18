@@ -1,6 +1,9 @@
 module AgSysLeaf
   use AgSysKinds,               only : r8
   use AgSysExcepUtils,          only : iulog, endrun
+    
+  implicit none
+  private
   
   integer, parameter, public :: lai_expansion_rate_minval = -1
   integer, parameter, public :: lai_expansion_rate_not_used = 0
@@ -8,6 +11,8 @@ module AgSysLeaf
   integer, parameter, public :: lai_expansion_rate_pp = 2
   integer, parameter, public :: lai_expansion_rate_maxval = 3
 
+  public :: canopy_expansion_actual
+  public :: canopy_expansion_pot
 contains
   subroutine canopy_expansion_actual(crop, leaf_expansion_rate_option, g_lai,&
                                      dlt_node_no_pot, dlt_leaf_no_pot, dlt_lai_stressed, dlt_leaf_dm, &
@@ -144,17 +149,17 @@ contains
     end select
   end subroutine leaf_no_pot
 
-  subroutine cproc_leaf_no_pot_1(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot)
+  subroutine cproc_leaf_no_pot_1(crop, current_stage, dlt_tt, node_no_now, dlt_node_no_pot, dlt_leaf_no_pot, leaves_per_node)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in)  :: current_stage
     real(r8), intent(in)  :: dlt_tt
     real(r8), intent(in)  :: node_no_now
     real(r8), intent(out) :: dlt_node_no_pot
     real(r8), intent(out) :: dlt_leaf_no_pot
+    real(r8), intent(out) :: leaves_per_node
 
     integer  :: node_formation_index
     real(r8) :: node_app_rate
-    real(r8) :: leaves_per_node
     type(composite_phase_type) :: node_formation_cphase
 
     node_formation_index  = crop%phases%composite_phase_index_from_type(composite_phase_type_node_formation)

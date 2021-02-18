@@ -77,7 +77,10 @@ contains
     allocate(composite_phase_type :: this%phases%composite_phases(2))
     this%phases%composite_phases(1)%name='vernalization'
     this%phases%composite_phases(1)%num_child_phases=3
-    this%phases%composite_phases(1)%child_phase_id=[2, 3, 4]
+    this%phases%composite_phases(1)%child_phase_id=[2, 3, 4] 
+    !!TODO: should we initialize child_phase_name? If we need these names, we can 
+    !! get them from the phase_name by using the child_phase_id. The child_phase_name 
+    !! is mostly for self-explaining
 
     this%phases%composite_phases(2)%name='eme2ej'
     this%phases%composite_phases(2)%num_child_phases=2

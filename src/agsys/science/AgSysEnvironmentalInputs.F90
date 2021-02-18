@@ -8,7 +8,7 @@ module AgSysEnvironmentalInputs
   !
   ! !USES:
   use AgSysKinds, only : r8
-  use AgSysPhysicalConsts, only : SHR_CONST_TKFRZ, SHR_CONST_SECONDS_PER_HOUR
+  use AgSysPhysicalConsts, only : tfrz, secsphr
 
   implicit none
   private
@@ -100,10 +100,10 @@ contains
     character(len=*), parameter :: subname = 'SetSpatiallyVaryingValues'
     !-----------------------------------------------------------------------
     !we set the variables after changing units for use in AgSys
-    this%photoperiod = day_length/SHR_CONST_SECONDS_PER_HOUR
-    this%tair_max = tair_max-SHR_CONST_TKFRZ
-    this%tair_min = tair_min-SHR_CONST_TKFRZ
-    this%tc_24hr = tc_24hr-SHR_CONST_TKFRZ
+    this%photoperiod = day_length/secsphr
+    this%tair_max = tair_max-tfrz
+    this%tair_min = tair_min-tfrz
+    this%tc_24hr = tc_24hr-tfrz
     this%h2osoi_liq_24hr(1:this%nlevsoi) = h2osoi_liq_24hr(1:this%nlevsoi)
 
   end subroutine SetSpatiallyVaryingValues
