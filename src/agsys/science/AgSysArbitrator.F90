@@ -2,6 +2,7 @@ module AgSysArbitrator
   use AgSysKinds,               only : r8
   use AgSysExcepUtils,          only : iulog, endrun
   use AgSysUtils,               only : interpolation, reals_are_equal, bound
+
   implicit none
   private
 
@@ -10,6 +11,7 @@ module AgSysArbitrator
   public :: retranslocate_dm
   public :: retranslocate_nitrogen
   public :: retranslocate_senescing_nitrogen
+
 contains
 
   subroutine partition_dm(crop, current_stage, dm_supply, part_dm_demand, part_dm)

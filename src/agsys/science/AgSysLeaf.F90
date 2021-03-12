@@ -13,7 +13,9 @@ module AgSysLeaf
 
   public :: canopy_expansion_actual
   public :: canopy_expansion_pot
+
 contains
+
   subroutine canopy_expansion_actual(crop, leaf_expansion_rate_option, g_lai,&
                                      dlt_node_no_pot, dlt_leaf_no_pot, dlt_lai_stressed, dlt_leaf_dm, &
                                      dlt_node_no, dlt_leaf_no, dlt_lai)
