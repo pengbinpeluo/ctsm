@@ -31,6 +31,8 @@ contains
   subroutine plant_root_depth(crop, soil_prop)
       class(agsys_crop_type_generic), intent(in) :: crop
       type(agsys_soil_property_type), intent(in) :: soil_prop
+      real(r8), intent(in) :: stage
+      real(r8), intent(out) :: dlt_root_depth
 
       real(r8) :: temp_factor
       real(r8) :: ws_factor
@@ -45,10 +47,10 @@ contains
       integer :: front_layer_no
       integer :: next_layer_no
 
-      temp_factor=interpolation(crop%rc_rel_root_advance, avg_temp)  !!!TODO: should we use air tempeature or soil temperature here???
-      ws_factor=interpolation(crop%rc_ws_root_fac,sw_def_psn)  !!!effect of supply_demand_ratio (sw_def_psn) on root depth increase
+      temp_factor = interpolation(crop%rc_rel_root_advance, avg_temp)  !!!TODO: should we use air tempeature or soil temperature here???
+      ws_factor = interpolation(crop%rc_ws_root_fac,sw_def_psn)  !!!effect of supply_demand_ratio (sw_def_psn) on root depth increase
       front_layer_no = find_root_front_layer_no(root_depth)
-      cum_depth=0._r8
+      cum_depth = 0._r8
       do i = 1, front_layer_no
           cum_depth = cum_depth + soil_prop%soil_layer_depth(i)
       end do
