@@ -28,7 +28,7 @@ module AgSysRoot
   end type agsys_soil_condition_type
 
 contains
-  subroutine plant_root_depth(crop, soil_prop)
+  subroutine root_depth_growth(crop, soil_prop)
       class(agsys_crop_type_generic), intent(in) :: crop
       type(agsys_soil_property_type), intent(in) :: soil_prop
       real(r8), intent(in) :: stage
@@ -49,7 +49,7 @@ contains
 
       temp_factor = interpolation(crop%rc_rel_root_advance, avg_temp)  !!!TODO: should we use air tempeature or soil temperature here???
       ws_factor = interpolation(crop%rc_ws_root_fac,sw_def_psn)  !!!effect of supply_demand_ratio (sw_def_psn) on root depth increase
-      front_layer_no = find_root_front_layer_no(root_depth)
+      front_layer_no = find_root_front_layer_no(root_depth)      !!!TODO: we need to implement this
       cum_depth = 0._r8
       do i = 1, front_layer_no
           cum_depth = cum_depth + soil_prop%soil_layer_depth(i)
@@ -60,7 +60,7 @@ contains
       next_layer_no = min(front_layer_no + 1, soil_prop%total_soil_layer_num)
       fasw1 = min(max(0._r8, get_fasw_for_layer(front_layer_no)), 1._r8)
       fasw2 = min(max(0._r8, get_fasw_for_layer(next_layer_no)), 1._r8)
-      fasw = weighting_factor * fasw2 + (1.0f - weighting_factor) * fasw1
+      fasw = weighting_factor * fasw2 + (1._r8 - weighting_factor) * fasw1
       sw_avail_factor = interpolation(crop%rc_sw_fac_root, fasw)       !!!water availability for effects on root depth growth
       afps_factor = interpolation(crop%rc_afps_fac_root, afps(layer))  !!!air filled pore space factor for root depth growth
       
@@ -69,7 +69,34 @@ contains
                         min(ws_factor, min(sw_avail_factor,afps_factor)) * !!!!water effect
                         soil_prop%xf(front_layer_no)                       !!!!Root exploration factor                          
       
-  end subroutine plant_root_depth
+  end subroutine root_depth_growth
+
+
+  subroutine root_length_growth()
+
+      dlt_root_length = 0._r8 !!!initialize
+
+      depth_today = root_depth + dlt_root_depth
+      front_layer_no = find_root_front_layer_no(root_depth)
+      
+      rlv_factor_tot = 0.0
+      do layer = 1, front_layer_no
+          rld = root_length(layer) / soil_prop%soil_layer_depth(layer)   !!!relative length density
+          plant_rld = max(0._r8, rld / crop%plant_density)
+          branching_factor = interpolation(crop%rc_rel_root_rate, plant_rld)
+          rlv_factor(layer) = interpolation(crop%rc_sw_fac_root, get_sw_avail_ratio(layer)) *
+                              interpolation(crop%rc_afps_fac_root, afps(layer)) *
+                              branching_factor *             !!!!branching factor
+                              soil_prop%xf(layer)  *         !!!!growth factor
+                              max(0._r8, soil_prop%soil_layer_depth(layer) / root_depthdlayer[layer])        !!!!space weighting factor
+          rlv_factor(layer) = max(rlv_factor(layer), 1e-6_r8)
+          rlv_factor_tot = rlv_factor_toto + rlv_factor(layer)          
+      end do
+      dlt_length_tot = dlt_dm_root / sm2smm * specific_root_length
+      do layer = 0, deepest_layer
+          dlt_root_length(layer) = dlt_length_tot * max (rlv_factor(layer) / rlv_factor_tot, 0.0)
+      end do
+  subroutine root_length_growth
   
 
   subroutine get_soil_condition(crop, soil_prop, env, root, soil_cond)
