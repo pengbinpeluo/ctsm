@@ -15,6 +15,7 @@ module AgSysRoot
       integer,  public :: total_soil_layer_num !soil layer number
       real(r8), allocatable, public :: soil_layer_depth(:) !for all layers
       real(r8), allocatable, public :: buil_density(:)     !for all layers
+      real(r8), allocatable, public :: sat_water_content(:)
       !TODO(pb, 2019-11-14) add more soil properties here
   end type agsys_soil_property_type
 
@@ -24,11 +25,12 @@ module AgSysRoot
       real(r8), public :: swdef_phenol      !!!soil water stress to phenology
       real(r8), public :: nfact_phenol      !!!nitrogen stress to phenology
       real(r8), public :: pfact_phenol      !!!phosphorus stress to phenology
+      real(r8), allocatable, public :: afps(:)
       !TODO(pb, 2019-11-14) add more soil condition variables that are needed by AgSys
   end type agsys_soil_condition_type
 
 contains
-  subroutine root_depth_growth(crop, soil_prop)
+  subroutine root_depth_growth(crop, soil_prop, stage, dlt_root_depth)
       class(agsys_crop_type_generic), intent(in) :: crop
       type(agsys_soil_property_type), intent(in) :: soil_prop
       real(r8), intent(in) :: stage
@@ -87,13 +89,14 @@ contains
       real(r8) :: branching_factor
       real(r8) :: dlt_length_tot
       integer :: front_layer_no, layer
+
       depth_today = root_depth + dlt_root_depth
       front_layer_no = find_root_front_layer_no(root_depth)
       do layer = 0, front_layer_no
           dlt_root_length(layer) = 0._r8 !!!initialize
       end do
       
-      rlv_factor_tot = 0.0
+      rlv_factor_tot = 0._r8
       do layer = 1, front_layer_no
           rld = root_length(layer) / soil_prop%soil_layer_depth(layer)   !!!relative length density
           plant_rld = max(0._r8, rld / crop%plant_density)
@@ -108,7 +111,7 @@ contains
       end do
       dlt_length_tot = dlt_dm_root / sm2smm * crop%specific_root_length
       do layer = 0, front_layer_no
-          dlt_root_length(layer) = dlt_length_tot * max (rlv_factor(layer) / rlv_factor_tot, 0.0)
+          dlt_root_length(layer) = dlt_length_tot * max (rlv_factor(layer) / rlv_factor_tot, 0._r8)
       end do
   subroutine root_length_growth
   
@@ -125,7 +128,20 @@ contains
       soil_cond%swdef_phenol   = get_swdef_phenol(soil_cond%sw_avail_ratio, crop%rc_sw_avail_phenol)
       soil_cond%nfact_phenol   = get_nfact_phenol()
       soil_cond%pfact_phenol   = get_pfact_phenol()
+      
+      do layer = 0, soil_prop%total_soil_layer_num
+          soil_cond%afps(layer) = get_afps (env, soil_prop, layer)
+      end do
   end subroutine get_soil_condition
+
+  function get_afps (env, soil_prop, layer) result (afps)
+    type(agsys_environmental_inputs_type), intent(in) :: env
+    type(agsys_soil_property_type), intent(in) :: soil_prop
+    integer, intent(in) :: layer
+    real(r8) :: afps
+
+    afps = max(0._r8, soil_prop%sat_water_content(layer) - env%h2osoi_liq_24hr(layer)) 
+  end function
 
   function get_sw_avail_ratio (env, root) result(sw_avail_ratio)
     type(agsys_environmental_inputs_type), intent(in) :: env
@@ -179,4 +195,6 @@ contains
     real(r8) :: pfact_phenol
     pfact_phenol=1._r8  !TODO(pb, 2019-11-07) a dummy value here and will come back later
   end function get_pfact_phenol
+
+
 end module AgSysRoot
