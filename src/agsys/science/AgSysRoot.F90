@@ -72,12 +72,26 @@ contains
   end subroutine root_depth_growth
 
 
-  subroutine root_length_growth()
+  subroutine root_length_growth(crop, soil_prop, dlt_dm_root, root_depth, dlt_root_depth, dlt_root_length, rlv_factor)
+      class(agsys_crop_type_generic), intent(in) :: crop
+      type(agsys_soil_property_type), intent(in) :: soil_prop
+      real(r8), intent(in) :: dlt_dm_root           !!!!g/m2
+      real(r8), intent(in) :: root_depth
+      real(r8), intent(in) :: dlt_root_depth
+      real(r8), intent(inout) :: rlv_factor(:) 
+      real(r8), intent(inout) :: dlt_root_length(:) !!!!mm
 
-      dlt_root_length = 0._r8 !!!initialize
-
+      real(r8) :: depth_today
+      real(r8) :: rlv_factor_tot
+      real(r8) :: rld, plant_rld
+      real(r8) :: branching_factor
+      real(r8) :: dlt_length_tot
+      integer :: front_layer_no, layer
       depth_today = root_depth + dlt_root_depth
       front_layer_no = find_root_front_layer_no(root_depth)
+      do layer = 0, front_layer_no
+          dlt_root_length(layer) = 0._r8 !!!initialize
+      end do
       
       rlv_factor_tot = 0.0
       do layer = 1, front_layer_no
@@ -90,10 +104,10 @@ contains
                               soil_prop%xf(layer)  *         !!!!growth factor
                               max(0._r8, soil_prop%soil_layer_depth(layer) / root_depthdlayer[layer])        !!!!space weighting factor
           rlv_factor(layer) = max(rlv_factor(layer), 1e-6_r8)
-          rlv_factor_tot = rlv_factor_toto + rlv_factor(layer)          
+          rlv_factor_tot = rlv_factor_tot + rlv_factor(layer)
       end do
-      dlt_length_tot = dlt_dm_root / sm2smm * specific_root_length
-      do layer = 0, deepest_layer
+      dlt_length_tot = dlt_dm_root / sm2smm * crop%specific_root_length
+      do layer = 0, front_layer_no
           dlt_root_length(layer) = dlt_length_tot * max (rlv_factor(layer) / rlv_factor_tot, 0.0)
       end do
   subroutine root_length_growth
