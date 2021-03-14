@@ -128,12 +128,15 @@ contains
 
       total_root_length_senesced = senescing_dm_root / sm2smm * crop%specific_root_length
       front_layer_no = find_root_front_layer_no(root_depth)
+      root_length_sum = 0._r8
       do layer = 0, front_layer_no
           root_length_sum = root_length_sum + root_length(layer)
       end do
+      
       do layer = 0, front_layer_no
-          root_length_senesced(layer) = total_root_length_senesced * max(root_length(layer) / root_length_sum, 0.0)
-          root_length(layer) = root_length(layer) - root_length_senesced(layer)      !!!!!TODO: how to make sure the root_lenght is always positive????
+          root_length_senesced(layer) = min(root_length(layer), total_root_length_senesced * max(root_length(layer) / root_length_sum, 0.0))
+          !!!TODO: need to make sure the actual root_length_senesced is corresponding to the senescing_dm_root
+          root_length(layer) = root_length(layer) - root_length_senesced(layer)
       end do
   end subroutine root_length_senescence  
 
