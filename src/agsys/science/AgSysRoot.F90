@@ -81,7 +81,7 @@ contains
       real(r8), intent(in) :: dlt_dm_root           !!!!g/m2
       real(r8), intent(in) :: root_depth
       real(r8), intent(inout) :: root_length(:)
-      real(r8), intent(inout) :: rlv_factor(:) 
+      real(r8), intent(inout) :: rlv_factor(:)      !!!root length volume factor 
       real(r8), intent(inout) :: dlt_root_length(:) !!!!mm
 
       real(r8) :: rlv_factor_tot
@@ -119,8 +119,8 @@ contains
       class(agsys_crop_type_generic),        intent(in)    :: crop
       real(r8), intent(in) :: senescing_dm_root
       real(r8), intent(in) :: root_depth
-      real(r8), intent(inout) :: root_length
-      real(r8), intent(inout) :: root_length_senesced
+      real(r8), intent(inout) :: root_length(:)
+      real(r8), intent(inout) :: root_length_senesced(:)
       
       real(r8) :: total_root_length_senesced
       real(r8) :: root_length_sum
