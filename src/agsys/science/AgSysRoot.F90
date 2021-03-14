@@ -25,16 +25,17 @@ module AgSysRoot
       real(r8), public :: swdef_phenol      !!!soil water stress to phenology
       real(r8), public :: nfact_phenol      !!!nitrogen stress to phenology
       real(r8), public :: pfact_phenol      !!!phosphorus stress to phenology
-      real(r8), allocatable, public :: afps(:)
+      real(r8), allocatable, public :: afps(:) !!!!air filled pore space, used for root depth and length growth
       !TODO(pb, 2019-11-14) add more soil condition variables that are needed by AgSys
   end type agsys_soil_condition_type
 
 contains
-  subroutine root_depth_growth(crop, soil_prop, stage, dlt_root_depth)
+  subroutine root_depth_growth(crop, soil_prop, stage, root_depth, dlt_root_depth)
       class(agsys_crop_type_generic), intent(in) :: crop
       type(agsys_soil_property_type), intent(in) :: soil_prop
       real(r8), intent(in) :: stage
-      real(r8), intent(out) :: dlt_root_depth
+      real(r8), intent(inout) :: root_depth
+      real(r8), intent(inout) :: dlt_root_depth
 
       real(r8) :: temp_factor
       real(r8) :: ws_factor
@@ -48,13 +49,14 @@ contains
  
       integer :: front_layer_no
       integer :: next_layer_no
+      integer :: layer
 
       temp_factor = interpolation(crop%rc_rel_root_advance, avg_temp)  !!!TODO: should we use air tempeature or soil temperature here???
       ws_factor = interpolation(crop%rc_ws_root_fac,sw_def_psn)  !!!effect of supply_demand_ratio (sw_def_psn) on root depth increase
       front_layer_no = find_root_front_layer_no(root_depth)      !!!TODO: we need to implement this
       cum_depth = 0._r8
-      do i = 1, front_layer_no
-          cum_depth = cum_depth + soil_prop%soil_layer_depth(i)
+      do layer = 1, front_layer_no
+          cum_depth = cum_depth + soil_prop%soil_layer_depth(layer)
       end do
       root_depth_in_front_layer = min(max(0._r8, soil_prop%soil_layer_depth(front_layer_no) - (cum_depth - root_depth)), 
                                       soil_prop%soil_layer_depth(front_layer_no))
@@ -70,27 +72,24 @@ contains
                         temp_factor *                                      !!!!temperature effect 
                         min(ws_factor, min(sw_avail_factor,afps_factor)) * !!!!water effect
                         soil_prop%xf(front_layer_no)                       !!!!Root exploration factor                          
-      
+      root_depth = root_depth + dlt_root_depth 
   end subroutine root_depth_growth
 
-
-  subroutine root_length_growth(crop, soil_prop, dlt_dm_root, root_depth, dlt_root_depth, dlt_root_length, rlv_factor)
+  subroutine root_length_growth(crop, soil_prop, dlt_dm_root, root_depth, root_lenght, dlt_root_length, rlv_factor)
       class(agsys_crop_type_generic), intent(in) :: crop
       type(agsys_soil_property_type), intent(in) :: soil_prop
       real(r8), intent(in) :: dlt_dm_root           !!!!g/m2
       real(r8), intent(in) :: root_depth
-      real(r8), intent(in) :: dlt_root_depth
+      real(r8), intent(inout) :: root_length(:)
       real(r8), intent(inout) :: rlv_factor(:) 
       real(r8), intent(inout) :: dlt_root_length(:) !!!!mm
 
-      real(r8) :: depth_today
       real(r8) :: rlv_factor_tot
       real(r8) :: rld, plant_rld
       real(r8) :: branching_factor
       real(r8) :: dlt_length_tot
       integer :: front_layer_no, layer
 
-      depth_today = root_depth + dlt_root_depth
       front_layer_no = find_root_front_layer_no(root_depth)
       do layer = 0, front_layer_no
           dlt_root_length(layer) = 0._r8 !!!initialize
@@ -112,9 +111,31 @@ contains
       dlt_length_tot = dlt_dm_root / sm2smm * crop%specific_root_length
       do layer = 0, front_layer_no
           dlt_root_length(layer) = dlt_length_tot * max (rlv_factor(layer) / rlv_factor_tot, 0._r8)
+          root_length(layer) = root_length(layer) + dlt_root_length(layer)
       end do
   subroutine root_length_growth
-  
+
+  subroutine root_length_senescence(crop, senescing_dm_root, root_depth, root_length, root_length_senesced)
+      class(agsys_crop_type_generic),        intent(in)    :: crop
+      real(r8), intent(in) :: senescing_dm_root
+      real(r8), intent(in) :: root_depth
+      real(r8), intent(inout) :: root_length
+      real(r8), intent(inout) :: root_length_senesced
+      
+      real(r8) :: total_root_length_senesced
+      real(r8) :: root_length_sum
+      integer :: front_layer_no, layer
+
+      total_root_length_senesced = senescing_dm_root / sm2smm * crop%specific_root_length
+      front_layer_no = find_root_front_layer_no(root_depth)
+      do layer = 0, front_layer_no
+          root_length_sum = root_length_sum + root_length(layer)
+      end do
+      do layer = 0, front_layer_no
+          root_length_senesced(layer) = total_root_length_senesced * max(root_length(layer) / root_length_sum, 0.0)
+          root_length(layer) = root_length(layer) - root_length_senesced(layer)      !!!!!TODO: how to make sure the root_lenght is always positive????
+      end do
+  end subroutine root_length_senescence  
 
   subroutine get_soil_condition(crop, soil_prop, env, root, soil_cond)
       class(agsys_crop_type_generic),        intent(in)    :: crop
