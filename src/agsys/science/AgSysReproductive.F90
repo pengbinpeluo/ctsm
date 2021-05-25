@@ -71,8 +71,10 @@ module AgSysReproductive
     end if
   end subroutine grain_n_demand
 
-  !!!!There are multiple ways to simulate grain dry matter and nitrogen demands
-  !!!!in the generic Plant model of APSIM now.
+  !!!!As for now, there are multiple ways to simulate grain dry matter and nitrogen demands
+  !!!!in the generic Plant model of APSIM, which means that the generic Plant model is not
+  !!!!that generic. Later efforts can be devoted to unify those pathways.
+ 
   !!!!For some crops like wheat, simulation of grain growth is determined by grain number
   subroutine grain_number(crop, current_stage, days_in_phase, dm_green, grain_no)
     class(agsys_crop_type_generic), intent(in) :: crop
