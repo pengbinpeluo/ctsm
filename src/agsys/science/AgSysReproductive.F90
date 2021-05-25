@@ -1,4 +1,4 @@
-module AgSysGrain
+module AgSysReproductive
   use AgSysKinds,               only : r8
   use AgSysCropTypeGeneric,     only : agsys_crop_type_generic
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
@@ -71,7 +71,9 @@ module AgSysGrain
     end if
   end subroutine grain_n_demand
 
-
+  !!!!There are multiple ways to simulate grain dry matter and nitrogen demands
+  !!!!in the generic Plant model of APSIM now.
+  !!!!For some crops like wheat, simulation of grain growth is determined by grain number
   subroutine grain_number(crop, current_stage, days_in_phase, dm_green, grain_no)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in) :: current_stage
@@ -97,5 +99,14 @@ module AgSysGrain
     end if
   end subroutine grain_number
   
+  subroutine grain_dm_demand_gn()
+  end subroutine grain_dm_demand_gn
 
-end module AgSysGrain
+
+  subroutine grain_n_demand_gn()
+  end subroutine grain_n_demand_gn
+
+  !!!!!For some crops like soybean, simulation of grain growth is determined by harvest index
+  subroutine grain_dm_demand_hi()
+  end subroutine grain_dm_demand_hi() 
+end module AgSysReproductive
