@@ -3,7 +3,7 @@ module AgSysGrain
   use AgSysCropTypeGeneric,     only : agsys_crop_type_generic
   use AgSysEnvironmentalInputs, only : agsys_environmental_inputs_type
   use AgSysUtils,  only : response_curve_type, interpolation, bound, divide
-
+  use AgSysExcepUtils,          only : iulog, endrun
   implicit none
 
   subroutine dlt_grain_n_conc (crop, ave_temp, swdef_expansion, nfact_grain_conc, grain_n_conc)
@@ -69,6 +69,33 @@ module AgSysGrain
       gn_capacity = gn_potential - n_green(meal_part_id)
       gn_grain_demand = bound (gn_grain_demand, gn_capacity)
     end if
-  end subroutine grain_demand
+  end subroutine grain_n_demand
+
+
+  subroutine grain_number(crop, current_stage, days_in_phase, dm_green, grain_no)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: current_stage
+    real(r8), intent(in) :: days_in_phase(:)
+    real(r8), intent(inout) :: grain_no
+    integer :: current_stage_index
+    
+    current_stage_index = floor(current_stage)
+
+    if  ((crop%phases(current_stage_index) == "emerging" ) .and. (days_in_phase(current_stage_index)==1)) then
+      !seedling has just emerged.
+      grain_no = 0._r8
+    else if ((crop%phases(current_stage_index) == "flowering" ) .and. (days_in_phase(current_stage_index)==1)) then
+      !we are at first day of grainfill.
+      if(crop%grain_no_determinant == "stem")
+         grain_no = crop%grains_per_gram_stem * dm_green(find_part_id("stem"))
+      else if (crop%grain_no_determinant=="ear")
+         grain_no = crop%grains_per_gram_stem * dm_green(find_part_id("ear"))
+      else
+         write(iulog, *) "Unknown Grain Number Determinant Specified"
+         call endrun(msg="Unknown Grain Number Determinant Specified")
+      end if
+    end if
+  end subroutine grain_number
+  
 
 end module AgSysGrain
