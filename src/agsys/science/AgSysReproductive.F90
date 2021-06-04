@@ -126,7 +126,7 @@ module AgSysReproductive
         !we are in the flowering to grainfill phase
         g_dlt_dm_grain_demand = g_grain_no
                               * crop%potential_grain_growth_rate
-                              * interpolation(tair, crop%rel_grainfill)
+                              * interpolation(tair, crop%rc_rel_grainfill)
       end if
       !check that grain growth will not result in daily n conc below minimum conc
       !for daily grain growth
@@ -143,8 +143,51 @@ module AgSysReproductive
     end if
   end subroutine grain_dm_demand_gn
 
+  subroutine grain_n_demand_gn(crop, current_stage, g_grain_no, tair, growth_dm, retranslocate_dm, g_n_grain_demand)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: current_stage
+    real(r8), intent(in) :: g_grain_no
+    real(r8), intent(in) :: tair  !daily mean air temperature
+    real(r8), intent(in) :: growth_dm(:)
+    real(r8), intent(in) :: retranslocate_dm(:)
+    real(r8), intent(out) :: g_n_grain_demand
 
-  subroutine grain_n_demand_gn()
+    integer :: current_stage_index
+    integer :: meal_part_id
+    real(r8) :: g_n_grain_demand
+    real(r8) :: g_n_grain_demand1, g_n_grain_demand2
+    real(r8) :: grain_growth
+    real(r8) :: daily_n_conc
+
+    current_stage_index = floor(current_stage)
+
+    if (crop%phases(current_stage_index)=="reproductive") then
+      !we are in grain filling stage
+      g_n_grain_demand1 = g_grain_no
+                     * crop%potential_grain_n_filling_rate * get_nfact_grain_conc()
+                     * interpolation(tair, crop%rc_rel_grain_n_fill)
+
+      g_n_grain_demand2 = min(g_grain_no * crop%potential_grain_n_filling_rate * interpolation(tair, crop%rc_rel_grain_n_fill),
+                              get_n_supply())
+      g_n_grain_demand = max(g_n_grain_demand1, g_n_grain_demand2)
+      !g_n_grain_demand = g_n_grain_demand1
+    end if
+    if (crop%phases(current_stage_index)=="postflowering") then
+      !during grain C filling period so make sure that C filling is still
+      !going on otherwise stop putting N in now
+
+      grain_growth = divide((growth_dm(meal_part_id) + retranslocation_dm(meal_part_id)),
+                            g_grain_no, 
+                            0._r8)
+      if (grain_growth < crop%crit_grainfill_rate) then
+        ! grain filling has stopped - stop n flow as well
+        g_n_grain_demand = 0.0
+      end if
+      daily_n_conc = divide(g_n_grain_demand,(growth_dm(meal_part_id) + retranslocation_dm(meal_part_id)), 1._r8)
+      if (daily_n_conc > crop%grain_max_daily_n_conc) then
+        g_n_grain_demand = (growth_dm(meal_part_id) + retranslocation_dm(meal_part_id)) * crop%grain_max_daily_n_conc
+      end if
+    end if
   end subroutine grain_n_demand_gn
 
   !!!!!For some crops like soybean, simulation of grain growth is determined by harvest index
