@@ -101,7 +101,46 @@ module AgSysReproductive
     end if
   end subroutine grain_number
   
-  subroutine grain_dm_demand_gn()
+  subroutine grain_dm_demand_gn(crop, current_stage, g_grain_no, dm_grain, tair, g_dlt_dm_grain_demand)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: current_stage
+    real(r8), intent(in) :: g_grain_no
+    real(r8), intent(in) :: dm_grain
+    real(r8), intent(in) :: tair
+    real(r8), intent(out) :: g_dlt_dm_grain_demand
+
+    integer :: current_stage
+    real(r8) :: nfact_grain_conc
+    real(r8) :: nfact_grain_fill
+    real(r8) :: max_dm_grain
+    real(r8) :: max_dlt_dm_grain
+
+    current_stage_index = floor(current_stage)
+
+    if  (crop%phases(current_stage_index) == "postflowering" ) then
+      if (crop%phases(current_stage_index)== "grainfill") then  !!!TODO: need to implement a function to tell if the crop is in a phase or composite phase
+        g_dlt_dm_grain_demand = g_grain_no
+                              * crop%potential_grain_filling_rate
+                              * interpolation(tair, crop%rc_rel_grainfill)
+      else
+        !we are in the flowering to grainfill phase
+        g_dlt_dm_grain_demand = g_grain_no
+                              * crop%potential_grain_growth_rate
+                              * interpolation(tair, crop%rel_grainfill)
+      end if
+      !check that grain growth will not result in daily n conc below minimum conc
+      !for daily grain growth
+      nfact_grain_conc = get_nfact_grain_conc()
+      nfact_grain_fill = min(1._r8, nfact_grain_conc * crop%potential_grain_n_filling_rate / crop%minimum_grain_n_filling_rate)
+      g_dlt_dm_grain_demand = g_dlt_dm_grain_demand * nfact_grain_fill
+
+      !check that growth does not exceed maximum grain size
+      max_dm_grain = g_grain_no * crop%max_grain_size
+      max_dlt_dm_grain = max (max_dm_grain - dm_grain, 0._r8)
+      g_dlt_dm_grain_demand = max(0._r8, min (g_dlt_dm_grain_demand, max_dlt_dm_grain))
+    else
+      g_dlt_dm_grain_demand = 0._r8
+    end if
   end subroutine grain_dm_demand_gn
 
 
