@@ -191,7 +191,8 @@ module AgSysReproductive
   end subroutine grain_n_demand_gn
 
   !!!!!For some crops like soybean, simulation of grain growth is determined by harvest index
-  subroutine grain_dm_demand_hi(crop, current_stage, g_dm_stress_max, photoperiod, dm_green)
+  subroutine grain_dm_demand_hi(crop, current_stage, g_dm_stress_max, photoperiod, dlt_dm_tot, dm_green, 
+                                g_dlt_dm_grain_demand, g_dlt_dm_oil_demand, g_dlt_dm_meal_demand)
   !!!!Find grain demand for carbohydrate using harvest index (g/m^2)
     class(agsys_crop_type_generic), intent(in) :: crop
     real(r8), intent(in) :: current_stage
@@ -199,7 +200,10 @@ module AgSysReproductive
     real(r8), intent(in) :: photoperiod
     real(r8), intent(in) :: dlt_dm_tot
     real(r8), intent(in) :: dm_green(:)
-    
+    real(r8), intent(out) :: g_dlt_dm_grain_demand
+    real(r8), intent(out) :: g_dlt_dm_oil_demand
+    real(r8), intent(out) :: g_dlt_dm_meal_demand
+
     integer :: current_stage_index
     real(r8) :: hi_max_pot, hi_incr
     real(r8) :: dm_green_yield_parts
