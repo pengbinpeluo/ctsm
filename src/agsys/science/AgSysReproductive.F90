@@ -191,6 +191,65 @@ module AgSysReproductive
   end subroutine grain_n_demand_gn
 
   !!!!!For some crops like soybean, simulation of grain growth is determined by harvest index
-  subroutine grain_dm_demand_hi()
+  subroutine grain_dm_demand_hi(crop, current_stage, g_dm_stress_max, photoperiod, dm_green)
+  !!!!Find grain demand for carbohydrate using harvest index (g/m^2)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in) :: current_stage
+    real(r8), intent(in) :: g_dm_stress_max
+    real(r8), intent(in) :: photoperiod
+    real(r8), intent(in) :: dlt_dm_tot
+    real(r8), intent(in) :: dm_green(:)
+    
+    integer :: current_stage_index
+    real(r8) :: hi_max_pot, hi_incr
+    real(r8) :: dm_green_yield_parts
+    real(r8) :: dm_tops_new, agb
+    real(r8) :: harvest_index, harvest_index_new
+    real(r8) :: dlt_dm_yield_unadj, dlt_dm_yield, dlt_dm_grain_demand
+    real(r8) :: g_dlt_dm_grain_demand, g_dlt_dm_oil_demand, g_dlt_dm_meal_demand
+    real(r8) :: dlt_dm_oil, dlt_dm_oil_conversion
+
+    current_stage_index = floor(current_stage)
+
+    if (crop%phases(current_stage_index)=="grainfill") then
+      hi_max_pot = interpolation (g_dm_stress_max, crop%rc_hi_max_pot_stress)
+      hi_incr = interpolation (photoperiod, crop%rc_hi_incr_pp)
+
+      dm_green_yield_parts = dm_green(meal_part_id) + dm_green(oil_part_id)
+      call get_total_agb(crop, dm_green, agb)
+      harvest_index = divide (dm_green_yield_parts, agb, 0.0)
+      dm_tops_new = agb + dlt_dm_tot   !!!!unadjusted for Grain Energy in dlt_dm
+    
+      harvest_index_new = u_bound (harvest_index + hi_incr, hi_max_pot)   !!increase of harvest index
+      dm_grain_new = dm_tops_new * harvest_index_new           !!unadjusted for Grain Energy in dlt_dm
+      dlt_dm_yield_unadj = dm_grain_new - dm_green_yield_parts !!unadjusted for Grain Energy in dlt_dm
+    
+      !!!!adjust for grain energy
+      dlt_dm_yield_unadj = bound (dlt_dm_yield_unadj, 0.0, dm_grain_new)
+      !! finally adjust for Grain energy used from dlt_dm - this is the potential grain wt
+      dlt_dm_yield = dlt_dm_yield_unadj * divide (1.0, 1.0 + harvest_index_new * (g_grain_energy - 1.0), 0.0)
+      dlt_dm_grain_demand = dlt_dm_yield * g_grain_energy   !!adding grain energy to potential new grain wt to get grain demand
+
+      g_dlt_dm_grain_demand = dlt_dm_grain_demand
+
+      !!!!allocate demand to oil and meal parts (grain=oil+meal)
+      dlt_dm_oil = divide (dlt_dm_grain_demand, g_grain_energy, 0._r8) * crop%grain_oil_conc
+      dlt_dm_oil_conversion =  divide(dlt_dm_grain_demand, g_grain_energy, 0._r8) * (g_grain_energy - 1._r8)
+      g_dlt_dm_oil_demand = max(0._r8, dlt_dm_oil + dlt_dm_oil_conversion)
+      g_dlt_dm_meal_demand = dlt_dm_grain_demand - g_dlt_dm_oil_demand
+    end if
   end subroutine grain_dm_demand_hi() 
+
+  subroutine get_total_agb(crop, dm_green, agb)
+    class(agsys_crop_type_generic), intent(in) :: crop
+    real(r8), intent(in)  :: dm_green(:)
+    real(r8), intent(out) :: agb
+    integer i, part_id
+
+    agb = 0._r8
+    do i = 1, crop%top_part_num
+      part_id = crop%top_part_id(i)
+      agb = agb + dm_green (part_id)
+    end do
+  end subroutine get_total_agb
 end module AgSysReproductive
